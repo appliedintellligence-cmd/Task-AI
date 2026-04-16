@@ -1,11 +1,12 @@
 import os
 import json
-import google.generativeai as genai
+import base64
+from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
 PROMPT = """Analyse this home repair photo. Return ONLY valid JSON,
 no markdown, no explanation, just raw JSON:
@@ -16,18 +17,18 @@ no markdown, no explanation, just raw JSON:
   "estimated_area": "string",
   "steps": [
     {
-      "step_number": "number",
+      "step_number": 1,
       "title": "string",
       "description": "string",
-      "duration_minutes": "number"
+      "duration_minutes": 10
     }
   ],
   "materials": [
     {
       "name": "string",
-      "quantity": "number",
+      "quantity": 1,
       "unit": "string",
-      "estimated_cost_aud": "number"
+      "estimated_cost_aud": 10.00
     }
   ],
   "difficulty": "beginner | intermediate | advanced",
@@ -37,14 +38,30 @@ no markdown, no explanation, just raw JSON:
 
 
 async def analyse_image(image_bytes: bytes) -> dict:
-    model = genai.GenerativeModel("gemini-2.0-flash")
-
-    image_part = {"mime_type": "image/jpeg", "data": image_bytes}
+    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
 
     for attempt in range(2):
         try:
-            response = model.generate_content([PROMPT, image_part])
-            text = response.text.strip()
+            response = client.chat.completions.create(
+                model="meta-llama/llama-4-scout-17b-16e-instruct",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{image_b64}"
+                                },
+                            },
+                            {"type": "text", "text": PROMPT},
+                        ],
+                    }
+                ],
+                max_tokens=2048,
+            )
+
+            text = response.choices[0].message.content.strip()
 
             # Strip markdown code fences if present
             if text.startswith("```"):
@@ -53,7 +70,8 @@ async def analyse_image(image_bytes: bytes) -> dict:
                     text = text[4:]
 
             return json.loads(text)
+
         except (json.JSONDecodeError, Exception) as e:
             if attempt == 1:
-                raise ValueError(f"Failed to parse Gemini response: {e}")
+                raise ValueError(f"Failed to parse vision response: {e}")
             continue
