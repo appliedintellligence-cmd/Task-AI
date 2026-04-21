@@ -2,6 +2,7 @@ import os
 import uuid
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from services.embeddings import generate_embedding
 
 load_dotenv()
 
@@ -22,6 +23,7 @@ async def upload_image(file_bytes: bytes, filename: str) -> str:
 
 
 async def save_job(user_id: str, image_url: str, result: dict) -> str:
+    embedding = generate_embedding(result)
     data = {
         "user_id": user_id,
         "image_url": image_url,
@@ -29,9 +31,17 @@ async def save_job(user_id: str, image_url: str, result: dict) -> str:
         "severity": result.get("severity"),
         "difficulty": result.get("difficulty"),
         "result_json": result,
+        "embedding": embedding,
     }
     response = _client.table("jobs").insert(data).execute()
     return response.data[0]["id"]
+
+
+async def get_similar_jobs(job_id: str, limit: int = 5) -> list:
+    response = _client.rpc(
+        "find_similar_jobs", {"job_id": job_id, "match_count": limit}
+    ).execute()
+    return response.data
 
 
 async def get_jobs(user_id: str) -> list:

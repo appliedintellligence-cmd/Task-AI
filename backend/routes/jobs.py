@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from typing import Optional
-from services.supabase import save_job, get_jobs, verify_token
+from services.supabase import save_job, get_jobs, get_similar_jobs, verify_token
 
 router = APIRouter()
 
@@ -35,4 +35,15 @@ async def list_jobs(user_id: str, authorization: str = Header(...)):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     jobs = await get_jobs(user_id)
+    return jobs
+
+
+@router.get("/similar/{job_id}")
+async def similar_jobs(job_id: str, authorization: str = Header(...)):
+    token = authorization.replace("Bearer ", "")
+    user_id = await verify_token(token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    jobs = await get_similar_jobs(job_id)
     return jobs
