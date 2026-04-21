@@ -5,7 +5,7 @@ import { signInWithEmail, signUpWithEmail, signInWithGoogle, supabase } from '..
 const TABS = ['Login', 'Register']
 
 const INITIAL_LOGIN = { email: '', password: '' }
-const INITIAL_REGISTER = { firstName: '', lastName: '', email: '', password: '', phone: '' }
+const INITIAL_REGISTER = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '', phone: '' }
 
 function validate(tab, fields) {
   const errors = {}
@@ -20,6 +20,8 @@ function validate(tab, fields) {
     else if (!/\S+@\S+\.\S+/.test(fields.email)) errors.email = 'Enter a valid email'
     if (!fields.password) errors.password = 'Password is required'
     else if (fields.password.length < 8) errors.password = 'Password must be at least 8 characters'
+    if (!fields.confirmPassword) errors.confirmPassword = 'Please confirm your password'
+    else if (fields.password && fields.confirmPassword !== fields.password) errors.confirmPassword = 'Passwords do not match'
     if (!fields.phone) errors.phone = 'Phone number is required'
     else if (!/^(\+61|0)[2-9]\d{8}$/.test(fields.phone.replace(/\s/g, '')))
       errors.phone = 'Enter a valid Australian number (e.g. 0412 345 678)'
@@ -280,6 +282,21 @@ export default function Login() {
 
               <div>
                 <input
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Confirm password"
+                  autoComplete="new-password"
+                  value={register.confirmPassword}
+                  onChange={setField(setRegister)}
+                  className={inputClass('confirmPassword')}
+                />
+                {register.confirmPassword && register.confirmPassword !== register.password && (
+                  <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                )}
+              </div>
+
+              <div>
+                <input
                   name="phone"
                   type="tel"
                   placeholder="Phone (e.g. 0412 345 678)"
@@ -293,8 +310,8 @@ export default function Login() {
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition flex items-center justify-center gap-2"
+                disabled={loading || (!!register.confirmPassword && register.confirmPassword !== register.password)}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition flex items-center justify-center gap-2"
               >
                 {loading ? <Spinner /> : 'Create account'}
               </button>
