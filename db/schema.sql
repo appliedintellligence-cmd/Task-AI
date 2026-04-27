@@ -99,11 +99,13 @@ CREATE POLICY "Users own messages" ON messages
     chat_id IN (SELECT id FROM chats WHERE user_id = auth.uid())
   );
 
--- Add embedding column to messages for semantic search
-ALTER TABLE messages ADD COLUMN IF NOT EXISTS embedding vector(768);
+-- Add embedding column to messages for semantic search (3072-dim: gemini-embedding-001)
+ALTER TABLE messages DROP COLUMN IF EXISTS embedding;
+ALTER TABLE messages ADD COLUMN embedding vector(3072);
 
+DROP FUNCTION IF EXISTS match_messages;
 CREATE OR REPLACE FUNCTION match_messages(
-  query_embedding vector(768),
+  query_embedding vector(3072),
   match_threshold float DEFAULT 0.8,
   match_count int DEFAULT 5
 )

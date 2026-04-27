@@ -1,5 +1,6 @@
 import os
 from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -7,11 +8,13 @@ load_dotenv()
 client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
 
 
-def embed_text(text: str) -> list[float]:
-    """Return a 768-dim embedding for any text string."""
+def embed_text(text: str) -> list:
     result = client.models.embed_content(
-        model="models/embedding-001",
+        model="gemini-embedding-001",
         contents=text,
+        config=types.EmbedContentConfig(
+            task_type="RETRIEVAL_DOCUMENT"
+        ),
     )
     return result.embeddings[0].values
 
