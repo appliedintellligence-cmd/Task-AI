@@ -1,21 +1,19 @@
 import os
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
 
-genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-client = genai
+client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
 
 
 def embed_text(text: str) -> list[float]:
     """Return a 768-dim embedding for any text string."""
-    result = client.embed_content(
+    result = client.models.embed_content(
         model="models/embedding-001",
-        content=text,
-        task_type="retrieval_document",
+        contents=text,
     )
-    return result["embedding"]
+    return result.embeddings[0].values
 
 
 def search_similar(embedding: list[float], threshold: float = 0.6, limit: int = 5) -> list[dict]:

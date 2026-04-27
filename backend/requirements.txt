@@ -6,5 +6,4 @@ supabase
 python-dotenv
 httpx
 google-genai
-google-generativeai
 numpy
