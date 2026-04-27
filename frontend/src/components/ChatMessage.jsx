@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ReactMarkdown from 'react-markdown'
 import RetailerLinks from './RetailerLinks'
 import { useSpeech } from '../hooks/useSpeech'
 
@@ -266,17 +267,27 @@ export default function ChatMessage({ message }) {
         {result ? (
           <RepairResult result={result} messageId={id} />
         ) : (
-          <div className={`px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed ${
+          <div className={`rounded-2xl rounded-tl-sm shadow-sm max-w-[85%] ${
             error
-              ? 'bg-red-50 border border-red-200 text-red-700'
-              : 'bg-white border border-gray-200 text-gray-800 shadow-sm'
+              ? 'px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm'
+              : 'bg-white border border-gray-200'
           }`}>
-            <div className="flex items-start justify-between gap-2">
+            {error ? (
               <span>{content}</span>
-              {!error && content && (
-                <SpeakerButton messageId={id} getText={() => content} />
-              )}
-            </div>
+            ) : (
+              <div className="flex items-start justify-between gap-2 px-4 py-4">
+                <div className="prose prose-sm max-w-none text-gray-800
+                  prose-headings:font-semibold prose-headings:text-gray-800
+                  prose-strong:text-gray-800
+                  prose-ol:pl-4 prose-ul:pl-4
+                  prose-li:my-0.5">
+                  <ReactMarkdown>{content}</ReactMarkdown>
+                </div>
+                {content && (
+                  <SpeakerButton messageId={id} getText={() => content} />
+                )}
+              </div>
+            )}
           </div>
         )}
         <p className="text-xs text-gray-400 mt-1 pl-1">{formatTime(timestamp)}</p>
