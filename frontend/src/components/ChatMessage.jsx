@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import RetailerLinks from './RetailerLinks'
+import { useSpeech } from '../hooks/useSpeech'
 
 const SEVERITY_CLS = {
   low: 'bg-green-100 text-green-700',
@@ -16,7 +17,68 @@ function formatTime(iso) {
   return new Date(iso).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })
 }
 
-function RepairResult({ result }) {
+function buildRepairSpeech(result) {
+  const parts = []
+  if (result.problem) parts.push(`Problem: ${result.problem}.`)
+  if (result.severity) parts.push(`Severity: ${result.severity}.`)
+  if (result.safety_notes?.length) {
+    parts.push(`Safety notes: ${result.safety_notes.join('. ')}.`)
+  }
+  if (result.steps?.length) {
+    parts.push('Repair steps:')
+    result.steps.forEach((s) => {
+      parts.push(`Step ${s.step_number}: ${s.title}. ${s.description}`)
+    })
+  }
+  return parts.join(' ')
+}
+
+function SpeakerButton({ messageId, getText }) {
+  const { speak, stop, speakingId } = useSpeech()
+  const isSpeaking = speakingId === messageId
+
+  function toggle() {
+    if (isSpeaking) stop()
+    else speak(getText(), messageId)
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      className={`p-1.5 rounded-lg transition ${
+        isSpeaking
+          ? 'text-blue-600 bg-blue-50'
+          : 'text-gray-400 hover:text-blue-500 hover:bg-gray-100'
+      }`}
+      title={isSpeaking ? 'Stop reading' : 'Read aloud'}
+    >
+      {isSpeaking ? (
+        // Animated speaker: three bars pulse
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M3 9v6h4l5 5V4L7 9H3z" />
+          <path
+            className="animate-pulse"
+            d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"
+            opacity="0.6"
+          />
+          <path
+            className="animate-pulse"
+            d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
+            opacity="0.35"
+            style={{ animationDelay: '150ms' }}
+          />
+        </svg>
+      ) : (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-3-3m3 3l3-3M6.343 9.657a8 8 0 000 11.314" />
+        </svg>
+      )}
+    </button>
+  )
+}
+
+function RepairResult({ result, messageId }) {
   const [stepsOpen, setStepsOpen] = useState(true)
   const [copied, setCopied] = useState(false)
 
@@ -58,22 +120,25 @@ function RepairResult({ result }) {
               )}
             </div>
           </div>
-          <button
-            onClick={handleCopy}
-            className="flex-shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
-            title="Copy to clipboard"
-          >
-            {copied ? (
-              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-              </svg>
-            )}
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <SpeakerButton messageId={messageId} getText={() => buildRepairSpeech(result)} />
+            <button
+              onClick={handleCopy}
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              title="Copy to clipboard"
+            >
+              {copied ? (
+                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Safety notes */}
@@ -172,7 +237,7 @@ function RepairResult({ result }) {
 }
 
 export default function ChatMessage({ message }) {
-  const { role, content, result, image_url, error, timestamp } = message
+  const { id, role, content, result, image_url, error, timestamp } = message
 
   if (role === 'user') {
     return (
@@ -199,14 +264,19 @@ export default function ChatMessage({ message }) {
       </div>
       <div className="flex-1 min-w-0">
         {result ? (
-          <RepairResult result={result} />
+          <RepairResult result={result} messageId={id} />
         ) : (
           <div className={`px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed ${
             error
               ? 'bg-red-50 border border-red-200 text-red-700'
               : 'bg-white border border-gray-200 text-gray-800 shadow-sm'
           }`}>
-            {content}
+            <div className="flex items-start justify-between gap-2">
+              <span>{content}</span>
+              {!error && content && (
+                <SpeakerButton messageId={id} getText={() => content} />
+              )}
+            </div>
           </div>
         )}
         <p className="text-xs text-gray-400 mt-1 pl-1">{formatTime(timestamp)}</p>

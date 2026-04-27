@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import analyse, jobs
+from routes import analyse, jobs, chat
 
 app = FastAPI(title="task.ai API")
 
@@ -14,6 +14,7 @@ app.add_middleware(
 
 app.include_router(analyse.router)
 app.include_router(jobs.router)
+app.include_router(chat.router)
 
 
 @app.get("/health")

@@ -6,6 +6,7 @@ const API = import.meta.env.VITE_API_URL
 export function useChat() {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
+  const [activeChatId, setActiveChatId] = useState(null)
 
   const addMsg = (msg) => setMessages((prev) => [...prev, msg])
 
@@ -52,14 +53,24 @@ export function useChat() {
             'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` }),
           },
-          body: JSON.stringify({ message: text }),
+          body: JSON.stringify({
+            chat_id: activeChatId || undefined,
+            message: text,
+            user_id: session?.user?.id,
+          }),
         })
-        if (!res.ok) throw new Error('Attach a photo to analyse a repair.')
+        if (!res.ok) throw new Error('Something went wrong. Please try again.')
         const data = await res.json()
+
+        if (data.chat_id && data.chat_id !== activeChatId) {
+          setActiveChatId(data.chat_id)
+          window.dispatchEvent(new Event('chat-updated'))
+        }
+
         addMsg({
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: data.reply || data.message,
+          content: data.reply,
           timestamp: new Date().toISOString(),
         })
       }
@@ -74,10 +85,27 @@ export function useChat() {
     } finally {
       setLoading(false)
     }
+  }, [activeChatId])
+
+  const loadChat = useCallback(async (chatId, token) => {
+    setActiveChatId(chatId)
+    const res = await fetch(`${API}/chats/${chatId}/messages`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return
+    const msgs = await res.json()
+    setMessages(msgs.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      image_url: m.image_url,
+      result: m.result_json,
+      timestamp: m.created_at,
+    })))
   }, [])
 
-  // Load a past job as a 2-message conversation
   const loadJob = useCallback((job) => {
+    setActiveChatId(null)
     setMessages([
       {
         id: `${job.id}-user`,
@@ -95,7 +123,10 @@ export function useChat() {
     ])
   }, [])
 
-  const clearMessages = useCallback(() => setMessages([]), [])
+  const clearMessages = useCallback(() => {
+    setMessages([])
+    setActiveChatId(null)
+  }, [])
 
-  return { messages, loading, sendMessage, loadJob, clearMessages }
+  return { messages, loading, sendMessage, loadJob, loadChat, clearMessages, activeChatId }
 }

@@ -2,26 +2,37 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, signOut } from '../lib/supabase'
 import { useChat } from '../hooks/useChat'
+import { useSpeech } from '../hooks/useSpeech'
 import ChatMessage from '../components/ChatMessage'
 import ChatInput from '../components/ChatInput'
+import ChatSidebar from '../components/ChatSidebar'
+import Settings from '../components/Settings'
 
 const API = import.meta.env.VITE_API_URL
 
 export default function ChatPage() {
   const navigate = useNavigate()
-  const { messages, loading, sendMessage, loadJob, clearMessages } = useChat()
+  const { messages, loading, sendMessage, loadJob, loadChat, clearMessages, activeChatId } = useChat()
+  const { speak } = useSpeech()
   const [user, setUser] = useState(null)
+  const [token, setToken] = useState(null)
   const [jobs, setJobs] = useState([])
   const [activeJobId, setActiveJobId] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const messagesEndRef = useRef()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) { setUser(session.user); fetchJobs(session.user.id, session.access_token) }
+      if (session) {
+        setUser(session.user)
+        setToken(session.access_token)
+        fetchJobs(session.user.id, session.access_token)
+      }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null)
+      setToken(session?.access_token ?? null)
       if (session) fetchJobs(session.user.id, session.access_token)
     })
     return () => subscription.unsubscribe()
@@ -31,8 +42,23 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  async function fetchJobs(userId, token) {
-    const res = await fetch(`${API}/jobs/${userId}`, { headers: { Authorization: `Bearer ${token}` } })
+  // Auto-read new text AI messages
+  useEffect(() => {
+    if (messages.length === 0) return
+    const last = messages[messages.length - 1]
+    if (
+      last.role === 'assistant' &&
+      last.content &&
+      !last.result &&
+      !last.error &&
+      localStorage.getItem('taskai_autoread') === 'true'
+    ) {
+      speak(last.content, last.id)
+    }
+  }, [messages])
+
+  async function fetchJobs(userId, tok) {
+    const res = await fetch(`${API}/jobs/${userId}`, { headers: { Authorization: `Bearer ${tok}` } })
     if (res.ok) setJobs(await res.json())
   }
 
@@ -40,6 +66,17 @@ export default function ChatPage() {
     clearMessages()
     setActiveJobId(null)
     setSidebarOpen(false)
+  }
+
+  async function handleSelectChat(chat) {
+    setActiveJobId(null)
+    setSidebarOpen(false)
+    await loadChat(chat.id, token)
+  }
+
+  function handleDeleteChat() {
+    clearMessages()
+    setActiveJobId(null)
   }
 
   function handleSelectJob(job) {
@@ -75,37 +112,17 @@ export default function ChatPage() {
           <span className="text-xl font-bold tracking-tight">task.ai</span>
         </div>
 
-        <div className="px-3 py-3">
-          <button
-            onClick={handleNewChat}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-gray-600 hover:bg-gray-700 transition text-sm text-gray-200"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New chat
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-3 py-1 space-y-0.5">
-          {jobs.length > 0 && (
-            <p className="text-xs text-gray-500 px-2 py-1 uppercase tracking-wide">History</p>
-          )}
-          {jobs.map((job) => (
-            <button
-              key={job.id}
-              onClick={() => handleSelectJob(job)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
-                activeJobId === job.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
-              }`}
-            >
-              <span className="truncate block">{job.problem}</span>
-              <span className="text-xs text-gray-600 block mt-0.5">
-                {new Date(job.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
-              </span>
-            </button>
-          ))}
-        </div>
+        <ChatSidebar
+          activeChatId={activeChatId}
+          onNewChat={handleNewChat}
+          onSelectChat={handleSelectChat}
+          onDeleteChat={handleDeleteChat}
+          jobs={jobs}
+          activeJobId={activeJobId}
+          onSelectJob={handleSelectJob}
+          user={user}
+          token={token}
+        />
 
         <div className="border-t border-gray-700 px-4 py-3">
           {user && (
@@ -114,6 +131,17 @@ export default function ChatPage() {
                 {(user.email?.[0] ?? '?').toUpperCase()}
               </div>
               <span className="text-xs text-gray-400 truncate flex-1">{user.email}</span>
+              <button
+                onClick={() => setSettingsOpen(true)}
+                className="text-gray-500 hover:text-gray-300 transition"
+                title="Voice settings"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
               <button onClick={handleSignOut} className="text-gray-500 hover:text-gray-300 transition" title="Sign out">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -123,6 +151,8 @@ export default function ChatPage() {
           )}
         </div>
       </aside>
+
+      <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       {/* ── MAIN ── */}
       <div className="flex-1 flex flex-col min-w-0">

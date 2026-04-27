@@ -75,3 +75,19 @@ async def analyse_image(image_bytes: bytes) -> dict:
             if attempt == 1:
                 raise ValueError(f"Failed to parse vision response: {e}")
             continue
+
+
+CHAT_SYSTEM = (
+    "You are task.ai, an expert home repair and maintenance assistant. "
+    "Help users diagnose problems, recommend materials and tools, and provide "
+    "clear step-by-step repair guidance. Be concise and safety-conscious."
+)
+
+
+def chat_reply(messages: list[dict]) -> str:
+    response = client.chat.completions.create(
+        model="meta-llama/llama-4-scout-17b-16e-instruct",
+        messages=[{"role": "system", "content": CHAT_SYSTEM}] + messages,
+        max_tokens=1024,
+    )
+    return response.choices[0].message.content.strip()

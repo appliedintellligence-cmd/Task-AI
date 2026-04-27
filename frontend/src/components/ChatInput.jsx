@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
+import { useVoice } from '../hooks/useVoice'
 
 export default function ChatInput({ onSend, loading }) {
   const [text, setText] = useState('')
@@ -6,6 +7,27 @@ export default function ChatInput({ onSend, loading }) {
   const [imagePreview, setImagePreview] = useState(null)
   const textareaRef = useRef()
   const fileRef = useRef()
+  const handleSendRef = useRef()
+
+  const { isListening, transcript, supported: voiceSupported, startListening, stopListening, registerSubmit } = useVoice()
+
+  // Keep submit callback current so auto-submit closure isn't stale
+  handleSendRef.current = () => {
+    if (loading || (!text.trim() && !imageFile)) return
+    onSend(text.trim(), imageFile)
+    setText('')
+    setImageFile(null)
+    setImagePreview(null)
+  }
+
+  useEffect(() => {
+    registerSubmit(() => handleSendRef.current?.())
+  }, [registerSubmit])
+
+  // Stream voice transcript into textarea
+  useEffect(() => {
+    if (transcript) setText(transcript)
+  }, [transcript])
 
   // Auto-resize textarea up to 4 rows (~96px)
   useEffect(() => {
@@ -36,30 +58,41 @@ export default function ChatInput({ onSend, loading }) {
   }
 
   function handleSend() {
-    if (loading || (!text.trim() && !imageFile)) return
-    onSend(text.trim(), imageFile)
-    setText('')
-    setImageFile(null)
-    setImagePreview(null)
+    handleSendRef.current?.()
+  }
+
+  function toggleMic() {
+    if (!voiceSupported) return
+    if (isListening) stopListening()
+    else startListening()
   }
 
   const canSend = !loading && (text.trim().length > 0 || imageFile !== null)
 
   return (
     <div className="border-t border-gray-200 bg-white px-4 py-3">
-      {/* Typing indicator */}
-      {loading && (
+      {/* Status bar */}
+      {(loading || isListening) && (
         <div className="flex items-center gap-2 mb-2 px-1">
-          <div className="flex gap-1">
-            {[0, 150, 300].map((delay) => (
-              <span
-                key={delay}
-                className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
-                style={{ animationDelay: `${delay}ms` }}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-gray-500">task.ai is analysing…</span>
+          {isListening ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-xs text-red-500 font-medium">Listening…</span>
+            </>
+          ) : (
+            <>
+              <div className="flex gap-1">
+                {[0, 150, 300].map((delay) => (
+                  <span
+                    key={delay}
+                    className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+                    style={{ animationDelay: `${delay}ms` }}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-gray-500">task.ai is analysing…</span>
+            </>
+          )}
         </div>
       )}
 
@@ -102,11 +135,25 @@ export default function ChatInput({ onSend, loading }) {
           onChange={handleFile}
         />
 
-        {/* Mic (placeholder) */}
+        {/* Mic */}
         <button
           type="button"
-          className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-500 hover:bg-gray-100 rounded-lg transition"
-          title="Voice input (coming soon)"
+          onClick={toggleMic}
+          disabled={!voiceSupported}
+          className={`flex-shrink-0 p-2 rounded-lg transition ${
+            isListening
+              ? 'text-red-500 bg-red-50 animate-pulse'
+              : voiceSupported
+                ? 'text-gray-400 hover:text-blue-500 hover:bg-gray-100'
+                : 'text-gray-300 cursor-not-allowed'
+          }`}
+          title={
+            isListening
+              ? 'Stop recording'
+              : voiceSupported
+                ? 'Voice input'
+                : 'Voice not supported in this browser'
+          }
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -120,7 +167,13 @@ export default function ChatInput({ onSend, loading }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={imageFile ? 'Add a message (optional)…' : 'Ask about a repair or attach a photo…'}
+          placeholder={
+            isListening
+              ? 'Listening…'
+              : imageFile
+                ? 'Add a message (optional)…'
+                : 'Ask about a repair or attach a photo…'
+          }
           rows={1}
           className="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition overflow-y-auto"
           style={{ lineHeight: '1.5', maxHeight: '96px' }}

@@ -69,6 +69,65 @@ BEGIN
 END;
 $$;
 
+-- Chat history tables
+CREATE TABLE chats (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  title TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
+  role TEXT CHECK (role IN ('user','assistant')),
+  content TEXT,
+  image_url TEXT,
+  result_json JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE chats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users own chats" ON chats
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users own messages" ON messages
+  FOR ALL USING (
+    chat_id IN (SELECT id FROM chats WHERE user_id = auth.uid())
+  );
+
+-- Add embedding column to messages for semantic search
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS embedding vector(768);
+
+CREATE OR REPLACE FUNCTION match_messages(
+  query_embedding vector(768),
+  match_threshold float DEFAULT 0.8,
+  match_count int DEFAULT 5
+)
+RETURNS TABLE (
+  id UUID,
+  content TEXT,
+  result_json JSONB,
+  similarity float
+)
+LANGUAGE SQL STABLE AS $$
+  SELECT id, content, result_json,
+    1 - (embedding <=> query_embedding) AS similarity
+  FROM messages
+  WHERE role = 'assistant'
+    AND embedding IS NOT NULL
+    AND 1 - (embedding <=> query_embedding) > match_threshold
+  ORDER BY embedding <=> query_embedding
+  LIMIT match_count;
+$$;
+
+CREATE INDEX IF NOT EXISTS messages_embedding_idx ON messages
+  USING ivfflat (embedding vector_cosine_ops)
+  WITH (lists = 100);
+
 -- Migration: add embedding column to existing jobs table
 -- ALTER TABLE jobs ADD COLUMN embedding vector(768);
 -- CREATE INDEX ON jobs USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
