@@ -11,7 +11,7 @@ client = genai
 def embed_text(text: str) -> list[float]:
     """Return a 768-dim embedding for any text string."""
     result = client.embed_content(
-        model="models/text-embedding-004",
+        model="models/embedding-001",
         content=text,
         task_type="retrieval_document",
     )
