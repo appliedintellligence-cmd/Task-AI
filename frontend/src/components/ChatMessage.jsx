@@ -237,8 +237,67 @@ function RepairResult({ result, messageId }) {
   )
 }
 
+const RETAILERS = [
+  { key: 'bunnings',   label: 'Bunnings',   dot: '🟢', cls: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' },
+  { key: 'amazon',     label: 'Amazon AU',  dot: '🟠', cls: 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' },
+  { key: 'mitre10',    label: 'Mitre 10',   dot: '🔵', cls: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
+  { key: 'totaltools', label: 'Total Tools', dot: '🔴', cls: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' },
+]
+
+function MaterialsSection({ materials }) {
+  const total = materials.reduce((sum, m) => sum + (Number(m.estimated_cost_aud) || 0), 0)
+
+  return (
+    <div className="mt-3 bg-gray-50 border border-gray-200 rounded-xl p-4">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+        Materials needed
+      </p>
+      <div className="space-y-3">
+        {materials.map((m, i) => (
+          <div key={i} className="bg-white rounded-lg border border-gray-100 p-3">
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <span className="text-sm font-medium text-gray-800">{m.name}</span>
+                {m.quantity && (
+                  <span className="text-xs text-gray-500 ml-2">{m.quantity}</span>
+                )}
+              </div>
+              {m.estimated_cost_aud != null && (
+                <span className="text-sm font-medium text-gray-700 flex-shrink-0 ml-3">
+                  ${Number(m.estimated_cost_aud).toFixed(2)}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {RETAILERS.map(({ key, label, dot, cls }) =>
+                m.links?.[key] ? (
+                  <a
+                    key={key}
+                    href={m.links[key]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs border transition ${cls}`}
+                  >
+                    {dot} {label}
+                  </a>
+                ) : null
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {total > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center">
+          <span className="text-xs text-gray-500">Total estimated cost</span>
+          <span className="text-sm font-semibold text-gray-800">${total.toFixed(2)} AUD</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ChatMessage({ message }) {
-  const { id, role, content, result, image_url, error, timestamp } = message
+  const { id, role, content, result, image_url, error, timestamp, materials } = message
 
   if (role === 'user') {
     return (
@@ -267,28 +326,31 @@ export default function ChatMessage({ message }) {
         {result ? (
           <RepairResult result={result} messageId={id} />
         ) : (
-          <div className={`rounded-2xl rounded-tl-sm shadow-sm max-w-[85%] ${
-            error
-              ? 'px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm'
-              : 'bg-white border border-gray-200'
-          }`}>
-            {error ? (
-              <span>{content}</span>
-            ) : (
-              <div className="flex items-start justify-between gap-2 px-4 py-4">
-                <div className="prose prose-sm max-w-none text-gray-800
-                  prose-headings:font-semibold prose-headings:text-gray-800
-                  prose-strong:text-gray-800
-                  prose-ol:pl-4 prose-ul:pl-4
-                  prose-li:my-0.5">
-                  <ReactMarkdown>{content}</ReactMarkdown>
+          <>
+            <div className={`rounded-2xl rounded-tl-sm shadow-sm max-w-[85%] ${
+              error
+                ? 'px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm'
+                : 'bg-white border border-gray-200'
+            }`}>
+              {error ? (
+                <span>{content}</span>
+              ) : (
+                <div className="flex items-start justify-between gap-2 px-4 py-4">
+                  <div className="prose prose-sm max-w-none text-gray-800
+                    prose-headings:font-semibold prose-headings:text-gray-800
+                    prose-strong:text-gray-800
+                    prose-ol:pl-4 prose-ul:pl-4
+                    prose-li:my-0.5">
+                    <ReactMarkdown>{content}</ReactMarkdown>
+                  </div>
+                  {content && (
+                    <SpeakerButton messageId={id} getText={() => content} />
+                  )}
                 </div>
-                {content && (
-                  <SpeakerButton messageId={id} getText={() => content} />
-                )}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+            {materials?.length > 0 && <MaterialsSection materials={materials} />}
+          </>
         )}
         <p className="text-xs text-gray-400 mt-1 pl-1">{formatTime(timestamp)}</p>
       </div>

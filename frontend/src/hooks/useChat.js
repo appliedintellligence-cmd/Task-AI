@@ -71,6 +71,7 @@ export function useChat() {
           id: crypto.randomUUID(),
           role: 'assistant',
           content: data.reply,
+          materials: data.materials || [],
           timestamp: new Date().toISOString(),
         })
       }

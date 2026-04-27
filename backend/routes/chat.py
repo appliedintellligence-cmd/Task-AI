@@ -1,3 +1,5 @@
+import re
+import json
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from typing import Optional
@@ -6,12 +8,35 @@ from services.supabase import (
 )
 from services.gemini import chat_reply
 from services.rag import embed_text, search_similar, build_context
+from services.retailers import generate_links
 
 router = APIRouter()
 
 # Similarity thresholds
 _CACHE_HIT = 0.8   # return past answer directly
 _CONTEXT_MIN = 0.6  # inject as context
+
+
+def _extract_materials(text: str) -> tuple[str, list[dict]]:
+    """Parse <materials>[...]</materials> from LLM reply.
+    Returns (clean_text, materials_with_links)."""
+    match = re.search(r'<materials>(.*?)</materials>', text, re.DOTALL)
+    if not match:
+        return text, []
+
+    clean = re.sub(r'\s*<materials>.*?</materials>', '', text, flags=re.DOTALL).strip()
+    try:
+        raw = json.loads(match.group(1).strip())
+    except (json.JSONDecodeError, ValueError):
+        return clean, []
+
+    materials = []
+    for m in raw:
+        if isinstance(m, dict) and m.get("name"):
+            m["links"] = generate_links(m["name"])
+            materials.append(m)
+
+    return clean, materials
 
 
 class ChatRequest(BaseModel):
@@ -37,12 +62,12 @@ async def send_message(body: ChatRequest, authorization: Optional[str] = Header(
     # Search for similar past assistant messages
     similar = search_similar(query_embedding, threshold=_CONTEXT_MIN, limit=5)
 
-    reply: str
+    raw_reply: str
     top_similarity = similar[0].get("similarity", 0) if similar else 0
 
     if top_similarity >= _CACHE_HIT:
         # Cache hit — return the stored answer directly without calling LLM
-        reply = similar[0].get("content") or ""
+        raw_reply = similar[0].get("content") or ""
         cached = True
     else:
         # Save user message before calling LLM
@@ -58,25 +83,26 @@ async def send_message(body: ChatRequest, authorization: Optional[str] = Header(
                     history.append({"role": m["role"], "content": m["content"]})
 
         if _CONTEXT_MIN <= top_similarity < _CACHE_HIT:
-            # Inject past-repair context into prompt
             context_str = build_context(similar)
             augmented = f"{context_str}\n\nNow answer this new request: {body.message}"
             history.append({"role": "user", "content": augmented})
         else:
             history.append({"role": "user", "content": body.message})
 
-        reply = chat_reply(history)
+        raw_reply = chat_reply(history)
         cached = False
 
-    # Save assistant response with its embedding
+    # Parse materials and strip tags from display message
+    reply, materials = _extract_materials(raw_reply)
+
+    # Save assistant response (clean text) with embedding
     if chat_id:
         if cached:
-            # Still save user message for history
             save_message(chat_id, "user", content=body.message)
         response_embedding = embed_text(reply)
         save_message(chat_id, "assistant", content=reply, embedding=response_embedding)
 
-    return {"reply": reply, "chat_id": chat_id, "cached": cached}
+    return {"reply": reply, "chat_id": chat_id, "cached": cached, "materials": materials}
 
 
 @router.get("/chats/{user_id}")
