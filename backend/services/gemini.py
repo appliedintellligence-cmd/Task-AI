@@ -69,11 +69,14 @@ How to prevent this issue recurring.
 Always be specific to the exact material, colour, and surface mentioned by the user.
 For Australian context: reference Australian standards, Bunnings product names where known, and metric measurements.
 Never give generic advice — tailor every response to the specific repair described.
-
-After your response, always append a machine-readable materials block — no extra text inside the tags:
-<materials>[{"name": "...", "quantity": "...", "estimated_cost_aud": 0.00}]</materials>
-Include all physical materials and tools listed above. If no materials are needed, omit the tags entirely.
 """.strip()
+
+# Appended only at call-time so SYSTEM_PROMPT stays clean but materials extraction still works
+_MATERIALS_INSTRUCTION = (
+    "\n\nAfter your response, always append a machine-readable materials block with no extra text inside the tags:\n"
+    '<materials>[{"name": "...", "quantity": "...", "estimated_cost_aud": 0.00}]</materials>\n'
+    "Include all physical materials and tools listed above. If no materials are needed, omit the tags entirely."
+)
 
 # Kept for image analysis — returns structured JSON consumed by the RepairResult card
 _IMAGE_PROMPT = """Analyse this home repair photo. Return ONLY valid JSON,
@@ -154,7 +157,7 @@ def chat_reply(messages: list[dict]) -> str:
         model="gemini-2.0-flash",
         contents=contents,
         config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
+            system_instruction=SYSTEM_PROMPT + _MATERIALS_INSTRUCTION,
             temperature=0.3,
         ),
     )
