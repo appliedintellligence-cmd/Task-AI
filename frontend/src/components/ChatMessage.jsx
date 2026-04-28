@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import RetailerLinks from './RetailerLinks'
 import { useSpeech } from '../hooks/useSpeech'
 
@@ -336,12 +337,11 @@ export default function ChatMessage({ message }) {
                 <span>{content}</span>
               ) : (
                 <div className="flex items-start justify-between gap-2 px-4 py-4">
-                  <div className="prose prose-sm max-w-none text-gray-800
+                  <div className="prose prose-sm prose-slate max-w-none
                     prose-headings:font-semibold prose-headings:text-gray-800
-                    prose-strong:text-gray-800
-                    prose-ol:pl-4 prose-ul:pl-4
-                    prose-li:my-0.5">
-                    <ReactMarkdown>{content}</ReactMarkdown>
+                    prose-strong:font-semibold prose-strong:text-gray-800
+                    prose-li:my-0.5 prose-p:my-1 prose-ol:my-1 prose-ul:my-1">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
                   </div>
                   {content && (
                     <SpeakerButton messageId={id} getText={() => content} />
