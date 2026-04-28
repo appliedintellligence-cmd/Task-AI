@@ -2,13 +2,81 @@ import os
 import json
 import base64
 from groq import Groq
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = Groq(api_key=os.environ["GROQ_API_KEY"])
+_groq = Groq(api_key=os.environ["GROQ_API_KEY"])
+_gemini = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
 
-PROMPT = """Analyse this home repair photo. Return ONLY valid JSON,
+SYSTEM_PROMPT = """
+You are task.ai, an expert home repair assistant for Australian homeowners and tradespeople.
+
+Always structure EVERY response in this exact format using markdown:
+
+## 🔍 Problem Diagnosis
+Brief description of the issue identified.
+Severity: [Low / Medium / High]
+Estimated time: [X hours]
+Difficulty: [Beginner / Intermediate / Advanced]
+
+## 🛠️ What You Need First
+### Tools Required
+- List every tool needed
+
+### Safety Preparation
+> ⚠️ List all safety warnings and PPE required
+
+### Workspace Preparation
+- Steps to prepare the area before starting
+
+## 📋 Step-by-Step Instructions
+
+### Method 1: [Primary Method Name]
+
+**Step 1: [Step Title]**
+- What to do
+- How to do it
+- Pro tip if relevant
+- Time: X minutes
+
+**Step 2: [Step Title]**
+[continue for all steps]
+
+### Method 2: [Alternative Method if applicable]
+[same format]
+
+## 🧰 Materials List
+
+| Material | Quantity | Est. Cost AUD | Purpose |
+|----------|----------|----------------|---------|
+| [name]   | [qty]    | $[cost]        | [use]   |
+
+**Estimated total cost: $XX – $XX AUD**
+
+## 🛒 Where to Buy
+I'll find the best prices across Bunnings, Amazon AU, and Mitre 10 for each material above.
+
+## ✅ Quality Check
+How to verify the repair was done correctly.
+
+## 💡 Prevention Tips
+How to prevent this issue recurring.
+
+---
+Always be specific to the exact material, colour, and surface mentioned by the user.
+For Australian context: reference Australian standards, Bunnings product names where known, and metric measurements.
+Never give generic advice — tailor every response to the specific repair described.
+
+After your response, always append a machine-readable materials block — no extra text inside the tags:
+<materials>[{"name": "...", "quantity": "...", "estimated_cost_aud": 0.00}]</materials>
+Include all physical materials and tools listed above. If no materials are needed, omit the tags entirely.
+""".strip()
+
+# Kept for image analysis — returns structured JSON consumed by the RepairResult card
+_IMAGE_PROMPT = """Analyse this home repair photo. Return ONLY valid JSON,
 no markdown, no explanation, just raw JSON:
 {
   "problem": "string (eg 'Cracked floor tile')",
@@ -42,28 +110,26 @@ async def analyse_image(image_bytes: bytes) -> dict:
 
     for attempt in range(2):
         try:
-            response = client.chat.completions.create(
+            response = _groq.chat.completions.create(
                 model="meta-llama/llama-4-scout-17b-16e-instruct",
                 messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
                     {
                         "role": "user",
                         "content": [
                             {
                                 "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{image_b64}"
-                                },
+                                "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"},
                             },
-                            {"type": "text", "text": PROMPT},
+                            {"type": "text", "text": _IMAGE_PROMPT},
                         ],
-                    }
+                    },
                 ],
                 max_tokens=2048,
             )
 
             text = response.choices[0].message.content.strip()
 
-            # Strip markdown code fences if present
             if text.startswith("```"):
                 text = text.split("```")[1]
                 if text.startswith("json"):
@@ -77,29 +143,19 @@ async def analyse_image(image_bytes: bytes) -> dict:
             continue
 
 
-CHAT_SYSTEM = (
-    "Format your response using markdown:\n"
-    "- Use ## for section headings\n"
-    "- Use **bold** for key terms\n"
-    "- Use numbered lists for steps\n"
-    "- Use bullet points for materials\n"
-    "- Use > blockquote for safety warnings\n"
-    "- Keep paragraphs short, max 3 lines\n\n"
-    "You are task.ai, an expert home repair and maintenance assistant. "
-    "Help users diagnose problems, recommend materials and tools, and provide "
-    "clear step-by-step repair guidance. Be concise and safety-conscious.\n\n"
-    "Always end your response with a MATERIALS section listing every material "
-    "and tool needed. Format it exactly as a JSON array wrapped in XML tags — "
-    "no extra text inside the tags:\n"
-    '<materials>[{"name": "...", "quantity": "...", "estimated_cost_aud": 0.00}]</materials>\n'
-    "Include all physical materials and tools. If no materials are needed, omit the tags entirely."
-)
-
-
 def chat_reply(messages: list[dict]) -> str:
-    response = client.chat.completions.create(
-        model="meta-llama/llama-4-scout-17b-16e-instruct",
-        messages=[{"role": "system", "content": CHAT_SYSTEM}] + messages,
-        max_tokens=1024,
+    # Convert OpenAI-style history to Gemini multi-turn format
+    contents = []
+    for m in messages:
+        role = "user" if m["role"] == "user" else "model"
+        contents.append(types.Content(role=role, parts=[types.Part(text=m["content"])]))
+
+    response = _gemini.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            temperature=0.3,
+        ),
     )
-    return response.choices[0].message.content.strip()
+    return response.text.strip()
