@@ -1,9 +1,11 @@
 fastapi
 uvicorn
 python-multipart
-groq
+google-genai
 supabase
 python-dotenv
 httpx
-google-genai
 numpy
+pillow
+opencv-python-headless
+replicate

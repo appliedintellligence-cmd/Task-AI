@@ -80,6 +80,60 @@ function SpeakerButton({ messageId, getText }) {
   )
 }
 
+function ConfidenceBadge({ level, score }) {
+  const styles = {
+    high:   "bg-green-100 text-green-800 border-green-200",
+    medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    low:    "bg-red-100 text-red-800 border-red-200"
+  }
+  const style = styles[level] || styles.medium
+  return (
+    <span className={`text-xs px-2 py-1 rounded-full font-medium border ${style}`}>
+      {score}% confident
+    </span>
+  )
+}
+
+function PipelineBadge({ pipeline }) {
+  const labels = {
+    "opencv-qwen-nemotron": "OpenCV + Qwen-VL + Nemotron",
+    "gemini-fallback": "Gemini"
+  }
+  return (
+    <span className="text-xs text-gray-400">
+      via {labels[pipeline] || pipeline}
+    </span>
+  )
+}
+
+function OpenCVBadge({ metrics }) {
+  if (!metrics || metrics.opencv_status !== "success") return null
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {metrics.mould_detected && (
+        <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
+          🔬 Mould detected
+        </span>
+      )}
+      {metrics.water_stain_detected && (
+        <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+          💧 Water stain
+        </span>
+      )}
+      {metrics.crack_ratio_pct > 1 && (
+        <span className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">
+          ⚡ {metrics.crack_ratio_pct}% edge density
+        </span>
+      )}
+      {metrics.is_blurry && (
+        <span className="text-xs bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full border border-gray-200">
+          📷 Blurry image
+        </span>
+      )}
+    </div>
+  )
+}
+
 function RepairResult({ result, messageId }) {
   const [stepsOpen, setStepsOpen] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -104,6 +158,15 @@ function RepairResult({ result, messageId }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-gray-900 leading-snug">{result.problem}</h3>
+            <div className="flex items-center gap-2 mb-2 flex-wrap mt-1.5">
+              {result.confidence_level && result.confidence != null && (
+                <ConfidenceBadge level={result.confidence_level} score={result.confidence} />
+              )}
+              {result.pipeline && (
+                <PipelineBadge pipeline={result.pipeline} />
+              )}
+            </div>
+            <OpenCVBadge metrics={result.opencv_metrics} />
             <div className="flex flex-wrap gap-1.5 mt-2">
               {result.severity && (
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${SEVERITY_CLS[result.severity] ?? 'bg-gray-100 text-gray-600'}`}>
@@ -142,6 +205,18 @@ function RepairResult({ result, messageId }) {
             </button>
           </div>
         </div>
+
+        {/* Clarification request */}
+        {result.needs_clarification && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-3">
+            <p className="text-sm font-semibold text-amber-800 mb-1">Need more info</p>
+            <p className="text-sm text-amber-700">{result.clarification_question}</p>
+            <button
+              className="mt-3 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1.5 rounded-full transition-colors">
+              Upload another photo
+            </button>
+          </div>
+        )}
 
         {/* Safety notes */}
         {result.safety_notes?.length > 0 && (

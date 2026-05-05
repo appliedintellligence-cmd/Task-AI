@@ -2,6 +2,22 @@
 
 AI-powered home repair assistant. Upload a photo of any repair issue and get step-by-step instructions, materials list with AUD pricing, and direct links to Bunnings, Amazon AU, and Mitre 10.
 
+## Multi-Stage Vision Pipeline
+
+| Stage | Component | Role |
+|---|---|---|
+| 1 | Pillow preprocessing | Contrast, sharpen, resize |
+| 1.5 | OpenCV metrics | Crack detection, mould, water, blur |
+| 2 | Qwen3-VL 8B (OpenRouter) | Visual facts extraction |
+| 3 | Nemotron 3 Nano (OpenRouter) | CoT repair reasoning |
+| 4 | Validation + retry | Nemotron Super on failure |
+| Fallback | Gemini 2.5 Flash | If OpenRouter unavailable |
+
+## New env var
+
+`OPENROUTER_API_KEY` — free at openrouter.ai
+Add to Render dashboard → Environment after deploy.
+
 ## Tech stack
 
 | Layer | Tech |
