@@ -137,6 +137,26 @@ function OpenCVBadge({ metrics }) {
 function RepairResult({ result, messageId }) {
   const [stepsOpen, setStepsOpen] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [repairedUrl, setRepairedUrl] = useState(null)
+  const [generating, setGenerating] = useState(false)
+
+  async function generatePreview() {
+    setGenerating(true)
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/inpaint`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inpaint_prompt: result.inpaint_prompt }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || 'Generation failed')
+      setRepairedUrl(data.repaired_image_url)
+    } catch (err) {
+      console.error('Inpaint error:', err)
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   function handleCopy() {
     const steps = result.steps
@@ -151,6 +171,36 @@ function RepairResult({ result, messageId }) {
     <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm shadow-sm overflow-hidden">
       {result.image_url && (
         <img src={result.image_url} alt="" className="w-full max-h-52 object-cover" />
+      )}
+
+      {result.inpaint_prompt && (
+        <div className="border-t border-gray-100">
+          {repairedUrl ? (
+            <div>
+              <img src={repairedUrl} alt="AI repaired preview" className="w-full max-h-52 object-cover" />
+              <p className="text-xs text-center text-gray-400 py-1.5">AI repaired preview</p>
+            </div>
+          ) : (
+            <div className="flex justify-center py-3">
+              {generating ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <svg className="w-4 h-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  Generating...
+                </div>
+              ) : (
+                <button
+                  onClick={generatePreview}
+                  className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition"
+                >
+                  ✨ Generate repaired preview
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       <div className="p-4 space-y-4">
