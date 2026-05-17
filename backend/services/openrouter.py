@@ -20,6 +20,8 @@ _VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
 
 def clean_json(raw: str) -> dict:
+    if not raw:
+        raise ValueError("Model returned empty response")
     clean = raw.strip()
     if clean.startswith("```"):
         parts = clean.split("```")
@@ -134,81 +136,54 @@ Return ONLY valid JSON, no markdown, no commentary:
       "step_number": 1,
       "phase": "preparation",
       "title": "Clear and clean the repair area",
-      "description": "Remove all furniture and floor coverings from the area. Sweep and mop the floor. Use a stiff brush to remove any loose debris from the crack. Vacuum out dust from inside the crack using a crevice attachment.",
-      "pro_tip": "Wipe the crack with methylated spirits on a rag to degrease — adhesion fails on dusty or oily surfaces.",
+      "description": "Detailed description of what to do and how to do it for this specific damage",
+      "pro_tip": "Expert tip specific to this material and situation",
       "duration_minutes": 15,
-      "safety_note": "Wear knee pads if working on floor tiles"
+      "safety_note": "Safety warning or null"
     }},
     {{
       "step_number": 2,
-      "phase": "preparation",
-      "title": "Assess crack depth and remove loose tile pieces",
-      "description": "Use a grout saw or oscillating tool to remove grout from around any loose tile sections. Gently tap the tile with a rubber mallet — a hollow sound means the tile has lifted from the substrate and must be fully removed before re-laying.",
-      "pro_tip": "Mark loose sections with masking tape before starting so you don't lose track.",
-      "duration_minutes": 20,
-      "safety_note": "Wear safety glasses — tile chips are sharp projectiles"
-    }},
-    {{
-      "step_number": 3,
       "phase": "tools_required",
-      "title": "Gather all tools before starting",
-      "description": "Lay out every tool you will need: grout saw, rubber mallet, cold chisel, notched trowel (6mm V-notch for floor tiles), grout float, sponge, two buckets, mixing paddle (or stir stick), tape measure, pencil, and a damp cloth. Having everything to hand prevents interruptions mid-repair.",
-      "pro_tip": "Rent a mixing paddle from Bunnings if you do not own one — it ensures lump-free adhesive.",
+      "title": "Gather all tools",
+      "description": "List every tool needed with sizes and specs",
+      "pro_tip": "Where to source or rent tools in Australia",
       "duration_minutes": 10,
       "safety_note": null
     }},
     {{
-      "step_number": 4,
+      "step_number": 3,
       "phase": "products_needed",
-      "title": "Purchase and prepare all products",
-      "description": "You will need: tile adhesive (Ardex X77 or similar flexible adhesive for floors), matching grout (take a photo of the existing grout to match colour in-store), grout sealer, tile spacers (2mm for standard floor tiles), and methylated spirits for cleaning. Check the existing tile against Bunnings tile samples to find the closest match if a replacement tile is needed.",
-      "pro_tip": "Buy 10% more grout than you think you need — colour batches vary between bags.",
+      "title": "Purchase all materials",
+      "description": "Specific Bunnings product names, quantities, and why each is needed",
+      "pro_tip": "Buying tip specific to this repair",
       "duration_minutes": 5,
       "safety_note": null
     }},
     {{
+      "step_number": 4,
+      "phase": "how_to_fix",
+      "title": "First repair action",
+      "description": "Detailed step-by-step instructions for this phase",
+      "pro_tip": "Trade secret for this specific repair",
+      "duration_minutes": 30,
+      "safety_note": "PPE or hazard warning if applicable"
+    }},
+    {{
       "step_number": 5,
       "phase": "how_to_fix",
-      "title": "Mix and apply tile adhesive",
-      "description": "Mix Ardex X77 adhesive according to packet directions (typically 3 parts powder to 1 part water) until smooth with no lumps. Using the notched trowel, apply adhesive to the substrate using the flat edge first to key the surface, then comb through with the notched edge held at 45 degrees to create even ridges. Work in sections no larger than 0.5 sqm to prevent the adhesive skinning over.",
-      "pro_tip": "Back-butter the replacement tile as well as the floor for maximum bond — especially important for large-format tiles.",
+      "title": "Second repair action",
+      "description": "Continue with next repair action in detail",
+      "pro_tip": "Pro tip",
       "duration_minutes": 20,
-      "safety_note": "Work in a ventilated area — adhesive fumes can build up in enclosed spaces"
+      "safety_note": null
     }},
     {{
       "step_number": 6,
-      "phase": "how_to_fix",
-      "title": "Set tile and check level",
-      "description": "Press the replacement tile firmly into position with a slight twisting motion to collapse the adhesive ridges and maximise contact. Place tile spacers on all four sides. Use a spirit level and rubber mallet to tap the tile flush with adjacent tiles — check in both directions. Remove any adhesive that squeezes up through the grout joints immediately with a damp sponge.",
-      "pro_tip": "Stand back and view the tile from a low angle with a torch to spot any lippage (edge height difference) before the adhesive sets.",
-      "duration_minutes": 15,
-      "safety_note": null
-    }},
-    {{
-      "step_number": 7,
-      "phase": "how_to_fix",
-      "title": "Allow adhesive to cure then grout",
-      "description": "Allow adhesive to cure for a minimum of 24 hours (48 hours in cool or humid conditions) before grouting. Remove tile spacers. Mix grout to a peanut butter consistency. Apply diagonally across the joints using a grout float, pressing firmly to pack joints completely. Remove excess grout with the float edge held at 90 degrees. Wait 15-20 minutes then wipe with a damp (not wet) sponge using circular motions. Polish haze with a dry cloth after 1 hour.",
-      "pro_tip": "Do not walk on the repair area for 24 hours after grouting.",
-      "duration_minutes": 60,
-      "safety_note": "Grout is alkaline — wear gloves to avoid skin irritation"
-    }},
-    {{
-      "step_number": 8,
       "phase": "post_fix",
-      "title": "Seal the grout and clean up",
-      "description": "After the grout has cured for 72 hours, apply a penetrating grout sealer (Selleys Grout Refresh or similar) using a small brush or applicator bottle along each grout line. Wipe excess off the tile face within 5 minutes. Allow to dry for 2 hours before allowing foot traffic. This prevents staining and moisture ingress which caused the original damage.",
-      "pro_tip": "Re-apply grout sealer every 12 months in wet areas and every 2 years in dry areas.",
-      "duration_minutes": 30,
-      "safety_note": null
-    }},
-    {{
-      "step_number": 9,
-      "phase": "post_fix",
-      "title": "Inspect and document",
-      "description": "After 7 days, inspect the repair in raking light (torch held at a low angle). Check for any cracking, hollow sounds (tap with knuckle), or grout colour mismatch. Photograph the completed repair for your records. If the damage recurred due to movement or structural flex, consult a licensed tiler to assess substrate suitability.",
-      "pro_tip": "Keep the remaining grout and any spare tiles stored in a dry place — they are invaluable for future touch-ups.",
-      "duration_minutes": 10,
+      "title": "Cure, seal and finish",
+      "description": "Curing times, sealing method, and finishing steps",
+      "pro_tip": "How to test the repair is successful",
+      "duration_minutes": 20,
       "safety_note": null
     }}
   ],
