@@ -2,14 +2,11 @@ import os
 import json
 import base64
 from groq import Groq
-from google import genai
-from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
 
 _groq = Groq(api_key=os.environ["GROQ_API_KEY"])
-_gemini = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
 
 SYSTEM_PROMPT = """
 You are task.ai, an expert home repair assistant for Australian homeowners and tradespeople.
