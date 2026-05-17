@@ -180,7 +180,7 @@ sequenceDiagram
     SB-->>BE: image_url (public URL)
 
     alt GROQ_API_KEY set
-        BE->>GR2: extract_facts_qwen(upload_bytes, metrics_context)<br/>model: llama-4-scout-17b-16e-instruct<br/>image: data:image/jpeg;base64,...
+        BE->>GR2: extract_facts_qwen(upload_bytes, metrics_context)<br/>model: llama-4-scout-17b-16e-instruct<br/>image sent as base64 data URL
         GR2-->>BE: facts JSON<br/>(surface_material, damage_types, …)
 
         BE->>BE: validate_facts(facts)
@@ -197,7 +197,7 @@ sequenceDiagram
 
         BE->>BE: merge facts + plan<br/>pipeline = "opencv-qwen-nemotron"
     else pipeline fails
-        BE->>GRF: analyse_image(image_bytes)<br/>model: llama-4-scout-17b-16e-instruct<br/>image: base64, prompt: CoT + JSON schema
+        BE->>GRF: analyse_image(image_bytes)<br/>model: llama-4-scout-17b-16e-instruct<br/>base64 image + CoT JSON schema prompt
         GRF-->>BE: Repair JSON<br/>pipeline = "gemini-fallback"
     end
 
