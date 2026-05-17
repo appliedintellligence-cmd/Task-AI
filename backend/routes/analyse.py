@@ -54,7 +54,7 @@ async def analyse(file: UploadFile = File(...)):
     result = None
     pipeline_used = "unknown"
 
-    if os.getenv("OPENROUTER_API_KEY"):
+    if os.getenv("GROQ_API_KEY"):
         try:
             # STAGE 2: Qwen-VL — visual facts only
             facts = await extract_facts_qwen(image_url, metrics_context)

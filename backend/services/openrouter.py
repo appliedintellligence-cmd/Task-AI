@@ -1,69 +1,20 @@
-import httpx
 import json
 import os
 import logging
+from groq import Groq
 
 logger = logging.getLogger(__name__)
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_BASE = "https://openrouter.ai/api/v1"
+_groq = Groq(api_key=os.environ["GROQ_API_KEY"])
 
-QWEN_VL_8B    = "qwen/qwen3-vl-8b-instruct"
-QWEN_VL_32B   = "qwen/qwen3-vl-32b-instruct"
-NEMOTRON_NANO = "nvidia/nemotron-3-nano-30b-a3b:free"
-NEMOTRON_SUPER = "nvidia/nemotron-3-super-120b-a12b:free"
+# Kept for import compatibility with analyse.py
+NEMOTRON_SUPER = "llama-3.3-70b-versatile"
 
-
-async def call_openrouter(
-    model: str,
-    messages: list,
-    image_url: str = None
-) -> str:
-    """
-    OpenAI-compatible call.
-    Works for Qwen-VL (vision) and Nemotron (text).
-    """
-    if not OPENROUTER_API_KEY:
-        raise ValueError("OPENROUTER_API_KEY not set")
-
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://task.ai",
-        "X-Title": "task.ai"
-    }
-
-    # Inject image into last user message
-    if image_url:
-        last = messages[-1]
-        last["content"] = [
-            {
-                "type": "image_url",
-                "image_url": {"url": image_url}
-            },
-            {
-                "type": "text",
-                "text": last["content"]
-            }
-        ]
-
-    async with httpx.AsyncClient(timeout=90) as client:
-        response = await client.post(
-            f"{OPENROUTER_BASE}/chat/completions",
-            headers=headers,
-            json={
-                "model": model,
-                "messages": messages,
-                "temperature": 0.1
-            }
-        )
-        response.raise_for_status()
-
-    return response.json()["choices"][0]["message"]["content"]
+_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+_TEXT_MODEL = "llama-3.3-70b-versatile"
 
 
 def clean_json(raw: str) -> dict:
-    """Strip markdown fences and parse JSON safely."""
     clean = raw.strip()
     if clean.startswith("```"):
         parts = clean.split("```")
@@ -73,33 +24,27 @@ def clean_json(raw: str) -> dict:
     return json.loads(clean.strip())
 
 
-async def extract_facts_qwen(
-    image_url: str,
-    metrics_context: str = ""
-) -> dict:
-    """
-    Stage 2 — Qwen-VL: visual facts only.
-    No diagnosis. No advice. Facts grounded by OpenCV.
-    """
-    logger.info("Stage 2: Qwen-VL fact extraction")
+async def extract_facts_qwen(image_url: str, metrics_context: str = "") -> dict:
+    """Stage 2 — visual fact extraction via Groq vision model."""
+    if not image_url:
+        raise ValueError("No image URL available for vision stage")
 
-    prompt = f"""
-{metrics_context}
+    logger.info("Stage 2: Groq vision fact extraction")
+
+    prompt = f"""{metrics_context}
 
 Examine this home repair photo carefully.
 OpenCV measurements above are objective ground truth.
 Your observations must be consistent with them.
 
-Return ONLY raw observed facts as valid JSON.
-No diagnosis. No repair advice. No guessing.
+Return ONLY raw observed facts as valid JSON, no markdown fences.
 
 {{
   "surface_material": "exact material eg ceramic tile",
   "surface_colour": "exact colour eg gloss black",
   "surface_finish": "matte|gloss|textured|painted|raw",
   "damage_visible": true,
-  "damage_types": ["crack","chip","stain","mould",
-    "peeling","rust","rot","water_damage"],
+  "damage_types": ["crack","chip","stain","mould","peeling","rust","rot","water_damage"],
   "damage_location": "position eg bottom-left corner",
   "damage_dimensions": "size eg 15cm x 8cm or unknown",
   "num_affected_areas": 1,
@@ -108,50 +53,45 @@ No diagnosis. No repair advice. No guessing.
   "structural_elements_visible": false,
   "grout_condition": "good|cracked|missing|na",
   "additional_observations": "anything else relevant"
-}}
-"""
+}}"""
 
-    raw = await call_openrouter(
-        model=QWEN_VL_8B,
-        messages=[{"role": "user", "content": prompt}],
-        image_url=image_url
+    response = _groq.chat.completions.create(
+        model=_VISION_MODEL,
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": image_url}},
+                {"type": "text", "text": prompt},
+            ],
+        }],
+        max_tokens=1024,
+        temperature=0.1,
     )
-    return clean_json(raw)
+    return clean_json(response.choices[0].message.content)
 
 
 async def generate_repair_plan_nemotron(
     facts: dict,
     metrics_context: str = "",
-    model: str = None
+    model: str = None,
 ) -> dict:
-    """
-    Stage 3 — Nemotron: CoT reasoning + repair plan.
-    Receives Qwen facts + OpenCV metrics as grounded input.
-    """
-    if model is None:
-        model = NEMOTRON_NANO
+    """Stage 3 — repair plan generation via Groq text model."""
+    logger.info("Stage 3: Groq repair plan generation")
 
-    logger.info(f"Stage 3: Nemotron repair plan ({model})")
-
-    system = """
-You are a licensed Australian tradesperson and building
-inspector with 20 years field experience.
+    system = """You are a licensed Australian tradesperson and building inspector with 20 years field experience.
 You reason step by step before every answer.
 You only work from confirmed facts — never invent damage.
 Reference Australian products, standards, and metric units.
 Bunnings product names preferred where known.
-Be specific to the exact material and damage described.
-"""
+Be specific to the exact material and damage described."""
 
-    user = f"""
-{metrics_context}
+    user = f"""{metrics_context}
 
 Vision model confirmed these visual facts:
 {json.dumps(facts, indent=2)}
 
-The OpenCV measurements and visual facts above are
-confirmed ground truth. Your repair plan must be
-fully consistent with both.
+The OpenCV measurements and visual facts above are confirmed ground truth.
+Your repair plan must be fully consistent with both.
 
 Think step by step:
 1. What caused this specific damage?
@@ -161,7 +101,7 @@ Think step by step:
 5. What exact products from Bunnings are needed?
 6. How confident am I? What is still unclear?
 
-Return ONLY this JSON, no other text:
+Return ONLY this JSON, no markdown, no other text:
 {{
   "confidence": 85,
   "confidence_reason": "clear image, obvious crack pattern",
@@ -198,14 +138,15 @@ Return ONLY this JSON, no other text:
   "safety_equipment": ["safety glasses", "P2 dust mask"],
   "when_to_call_professional": "specific trigger condition",
   "inpaint_prompt": "Perfectly repaired [material] [colour] [finish], no cracks or damage, professional finish, photorealistic, same lighting as original photo"
-}}
-"""
+}}"""
 
-    raw = await call_openrouter(
-        model=model,
+    response = _groq.chat.completions.create(
+        model=_TEXT_MODEL,
         messages=[
             {"role": "system", "content": system},
-            {"role": "user", "content": user}
-        ]
+            {"role": "user", "content": user},
+        ],
+        max_tokens=2048,
+        temperature=0.1,
     )
-    return clean_json(raw)
+    return clean_json(response.choices[0].message.content)
