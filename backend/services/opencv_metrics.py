@@ -14,79 +14,65 @@ def extract_metrics(image_bytes: bytes) -> tuple[dict, bytes]:
     try:
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        del nparr
 
         if img is None:
             return _empty_metrics("decode_failed"), image_bytes
 
+        # ── Resize to max 1024px to cap memory usage ─
         h, w = img.shape[:2]
+        max_dim = 1024
+        if max(h, w) > max_dim:
+            scale = max_dim / max(h, w)
+            img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+            h, w = img.shape[:2]
 
         # ── CLAHE contrast enhancement ──────────────
         lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
         l, a, b = cv2.split(lab)
-        clahe = cv2.createCLAHE(
-            clipLimit=3.0, tileGridSize=(8, 8)
-        )
+        del lab
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
         l = clahe.apply(l)
         enhanced = cv2.merge([l, a, b])
+        del l, a, b
         enhanced = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
+        del img
 
         # ── Crack / edge detection ───────────────────
         gray = cv2.cvtColor(enhanced, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         edges = cv2.Canny(blurred, 50, 150)
+        del blurred
         crack_pixels = int(np.sum(edges > 0))
         total_pixels = int(edges.size)
-        crack_ratio_pct = round(
-            (crack_pixels / total_pixels) * 100, 2
-        )
+        crack_ratio_pct = round((crack_pixels / total_pixels) * 100, 2)
+        del edges
 
         # ── Affected area estimation ─────────────────
-        _, thresh = cv2.threshold(
-            gray, 80, 255, cv2.THRESH_BINARY_INV
-        )
-        contours, _ = cv2.findContours(
-            thresh,
-            cv2.RETR_EXTERNAL,
-            cv2.CHAIN_APPROX_SIMPLE
-        )
+        _, thresh = cv2.threshold(gray, 80, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        del thresh
         if contours:
             largest = max(contours, key=cv2.contourArea)
             damage_area = cv2.contourArea(largest)
-            affected_area_pct = round(
-                (damage_area / total_pixels) * 100, 2
-            )
+            affected_area_pct = round((damage_area / total_pixels) * 100, 2)
         else:
             affected_area_pct = 0.0
 
-        # ── Mould detection (green-black HSV) ────────
+        # ── Mould + water stain detection ────────────
         hsv = cv2.cvtColor(enhanced, cv2.COLOR_BGR2HSV)
-        mould_mask = cv2.inRange(
-            hsv,
-            np.array([35, 40, 20]),
-            np.array([85, 255, 100])
-        )
-        mould_detected = (
-            np.sum(mould_mask > 0) / total_pixels
-        ) > 0.02
+        mould_mask = cv2.inRange(hsv, np.array([35, 40, 20]), np.array([85, 255, 100]))
+        mould_detected = (np.sum(mould_mask > 0) / total_pixels) > 0.02
+        del mould_mask
+        water_mask = cv2.inRange(hsv, np.array([15, 30, 100]), np.array([35, 150, 255]))
+        water_stain_detected = (np.sum(water_mask > 0) / total_pixels) > 0.03
+        del water_mask, hsv
 
-        # ── Water stain detection (yellow-brown) ─────
-        water_mask = cv2.inRange(
-            hsv,
-            np.array([15, 30, 100]),
-            np.array([35, 150, 255])
-        )
-        water_stain_detected = (
-            np.sum(water_mask > 0) / total_pixels
-        ) > 0.03
-
-        # ── Blur detection ───────────────────────────
-        laplacian_var = float(
-            cv2.Laplacian(gray, cv2.CV_64F).var()
-        )
+        # ── Blur + brightness ─────────────────────────
+        laplacian_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
         is_blurry = laplacian_var < 100
-
-        # ── Brightness ───────────────────────────────
         brightness = float(np.mean(gray))
+        del gray
         image_quality = (
             "good" if brightness > 80
             else "dark" if brightness < 40
@@ -94,11 +80,10 @@ def extract_metrics(image_bytes: bytes) -> tuple[dict, bytes]:
         )
 
         # ── Convert enhanced back to bytes ───────────
-        _, buf = cv2.imencode(
-            '.jpg', enhanced,
-            [cv2.IMWRITE_JPEG_QUALITY, 92]
-        )
+        _, buf = cv2.imencode('.jpg', enhanced, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        del enhanced
         enhanced_bytes = buf.tobytes()
+        del buf
 
         metrics = {
             "crack_ratio_pct": crack_ratio_pct,
