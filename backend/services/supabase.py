@@ -32,8 +32,9 @@ async def save_job(user_id: str, image_url: str, result: dict) -> str:
         "severity": result.get("severity"),
         "difficulty": result.get("difficulty"),
         "result_json": result,
-        "embedding": embedding,
     }
+    if embedding is not None:
+        data["embedding"] = embedding
     response = _client.table("jobs").insert(data).execute()
     return response.data[0]["id"]
 
