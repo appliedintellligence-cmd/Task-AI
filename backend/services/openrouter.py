@@ -84,7 +84,7 @@ async def generate_repair_plan_nemotron(
 ) -> dict:
     """Stage 3 — repair plan via Nemotron on OpenRouter (free tier)."""
     if model is None:
-        model = NEMOTRON_NANO
+        model = NEMOTRON_SUPER
 
     logger.info(f"Stage 3: Nemotron repair plan ({model})")
 
