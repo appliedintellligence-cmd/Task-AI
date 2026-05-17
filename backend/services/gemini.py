@@ -162,18 +162,14 @@ async def analyse_image(image_bytes: bytes) -> dict:
 
 
 def chat_reply(messages: list[dict]) -> str:
-    # Convert OpenAI-style history to Gemini multi-turn format
-    contents = []
-    for m in messages:
-        role = "user" if m["role"] == "user" else "model"
-        contents.append(types.Content(role=role, parts=[types.Part(text=m["content"])]))
-
-    response = _gemini.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT + _MATERIALS_INSTRUCTION,
-            temperature=0.3,
-        ),
+    groq_messages = [
+        {"role": "system", "content": SYSTEM_PROMPT + _MATERIALS_INSTRUCTION},
+        *[{"role": m["role"], "content": m["content"]} for m in messages],
+    ]
+    response = _groq.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=groq_messages,
+        temperature=0.3,
+        max_tokens=2048,
     )
-    return response.text.strip()
+    return response.choices[0].message.content.strip()
