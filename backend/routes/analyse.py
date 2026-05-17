@@ -56,8 +56,8 @@ async def analyse(file: UploadFile = File(...)):
 
     if os.getenv("GROQ_API_KEY"):
         try:
-            # STAGE 2: Qwen-VL — visual facts only
-            facts = await extract_facts_qwen(image_url, metrics_context)
+            # STAGE 2: Groq vision — visual facts only (base64 to avoid URL auth issues)
+            facts = await extract_facts_qwen(upload_bytes, metrics_context)
             facts_ok, facts_err = validate_facts(facts)
 
             if not facts_ok:

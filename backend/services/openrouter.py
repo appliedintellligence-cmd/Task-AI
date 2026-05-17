@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import logging
@@ -28,12 +29,12 @@ def clean_json(raw: str) -> dict:
     return json.loads(clean.strip())
 
 
-async def extract_facts_qwen(image_url: str, metrics_context: str = "") -> dict:
-    """Stage 2 — visual fact extraction via Groq vision model."""
-    if not image_url:
-        raise ValueError("No image URL available for vision stage")
-
+async def extract_facts_qwen(image_bytes: bytes, metrics_context: str = "") -> dict:
+    """Stage 2 — visual fact extraction via Groq vision model (base64)."""
     logger.info("Stage 2: Groq vision fact extraction")
+
+    b64 = base64.b64encode(image_bytes).decode("utf-8")
+    data_url = f"data:image/jpeg;base64,{b64}"
 
     prompt = f"""{metrics_context}
 
@@ -64,7 +65,7 @@ Return ONLY raw observed facts as valid JSON, no markdown fences.
         messages=[{
             "role": "user",
             "content": [
-                {"type": "image_url", "image_url": {"url": image_url}},
+                {"type": "image_url", "image_url": {"url": data_url}},
                 {"type": "text", "text": prompt},
             ],
         }],
