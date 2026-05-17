@@ -4,6 +4,7 @@ python-multipart
 groq
 supabase
 python-dotenv
+httpx
 numpy
 pillow
 opencv-python-headless

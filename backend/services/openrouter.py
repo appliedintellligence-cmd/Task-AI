@@ -1,17 +1,21 @@
 import json
 import os
 import logging
+import httpx
 from groq import Groq
 
 logger = logging.getLogger(__name__)
 
 _groq = Groq(api_key=os.environ["GROQ_API_KEY"])
 
-# Kept for import compatibility with analyse.py
-NEMOTRON_SUPER = "llama-3.3-70b-versatile"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_BASE = "https://openrouter.ai/api/v1"
+
+# Nemotron models are free on OpenRouter (:free suffix)
+NEMOTRON_NANO  = "nvidia/nemotron-3-nano-30b-a3b:free"
+NEMOTRON_SUPER = "nvidia/nemotron-3-super-120b-a12b:free"
 
 _VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-_TEXT_MODEL = "llama-3.3-70b-versatile"
 
 
 def clean_json(raw: str) -> dict:
@@ -75,8 +79,11 @@ async def generate_repair_plan_nemotron(
     metrics_context: str = "",
     model: str = None,
 ) -> dict:
-    """Stage 3 — repair plan generation via Groq text model."""
-    logger.info("Stage 3: Groq repair plan generation")
+    """Stage 3 — repair plan via Nemotron on OpenRouter (free tier)."""
+    if model is None:
+        model = NEMOTRON_NANO
+
+    logger.info(f"Stage 3: Nemotron repair plan ({model})")
 
     system = """You are a licensed Australian tradesperson and building inspector with 20 years field experience.
 You reason step by step before every answer.
@@ -140,13 +147,24 @@ Return ONLY this JSON, no markdown, no other text:
   "inpaint_prompt": "Perfectly repaired [material] [colour] [finish], no cracks or damage, professional finish, photorealistic, same lighting as original photo"
 }}"""
 
-    response = _groq.chat.completions.create(
-        model=_TEXT_MODEL,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        max_tokens=2048,
-        temperature=0.1,
-    )
-    return clean_json(response.choices[0].message.content)
+    async with httpx.AsyncClient(timeout=90) as client:
+        response = await client.post(
+            f"{OPENROUTER_BASE}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://task.ai",
+                "X-Title": "task.ai",
+            },
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                "temperature": 0.1,
+            },
+        )
+        response.raise_for_status()
+
+    return clean_json(response.json()["choices"][0]["message"]["content"])
