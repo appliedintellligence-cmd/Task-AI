@@ -1,15 +1,12 @@
-import os
-import json
 import logging
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from services.gemini import analyse_image
 from services.supabase import upload_image
 from services.opencv_metrics import extract_metrics, build_metrics_context
 from services.openrouter import (
     extract_facts_qwen,
     generate_repair_plan_nemotron,
-    NEMOTRON_SUPER
+    NEMOTRON_SUPER,
 )
 from services.validator import validate_facts, validate_plan, confidence_level
 
@@ -31,7 +28,6 @@ async def analyse(file: UploadFile = File(...)):
     cv_metrics, enhanced_bytes = extract_metrics(image_bytes)
     metrics_context = build_metrics_context(cv_metrics)
 
-    # Use enhanced image for upload
     if cv_metrics["opencv_status"] == "success":
         upload_bytes = enhanced_bytes
         logger.info("Using OpenCV enhanced image")
@@ -39,7 +35,6 @@ async def analyse(file: UploadFile = File(...)):
         upload_bytes = image_bytes
         logger.warning(f"OpenCV failed: {cv_metrics['opencv_status']}")
 
-    # Upload to Supabase Storage (non-blocking — analysis proceeds even if upload fails)
     image_url = None
     try:
         filename = file.filename or "upload.jpg"
@@ -48,82 +43,41 @@ async def analyse(file: UploadFile = File(...)):
         print(f"Storage upload failed (non-fatal): {e}")
 
     # ════════════════════════════════════════════════
-    # STAGE 2-4 — OpenRouter pipeline
-    # Falls back to Gemini if OpenRouter unavailable
+    # STAGE 2-4 — Groq Maverick vision → Nemotron repair plan
     # ════════════════════════════════════════════════
-    result = None
-    pipeline_used = "unknown"
+    try:
+        facts = await extract_facts_qwen(upload_bytes, metrics_context)
+        facts_ok, facts_err = validate_facts(facts)
 
-    if os.getenv("GROQ_API_KEY"):
-        try:
-            # STAGE 2: Groq vision — visual facts only (base64 to avoid URL auth issues)
-            facts = await extract_facts_qwen(upload_bytes, metrics_context)
-            facts_ok, facts_err = validate_facts(facts)
+        if not facts_ok:
+            logger.warning(f"Facts invalid: {facts_err}")
+            raise ValueError(facts_err)
 
-            if not facts_ok:
-                logger.warning(f"Qwen facts invalid: {facts_err}")
-                raise ValueError(facts_err)
+        plan = await generate_repair_plan_nemotron(facts, metrics_context)
+        plan_ok, plan_err = validate_plan(plan)
 
-            # STAGE 3: Nemotron — CoT repair reasoning
-            plan = await generate_repair_plan_nemotron(facts, metrics_context)
+        if not plan_ok:
+            logger.warning(f"Plan invalid: {plan_err}. Retrying with Nemotron Super.")
+            plan = await generate_repair_plan_nemotron(
+                facts, metrics_context, model=NEMOTRON_SUPER
+            )
             plan_ok, plan_err = validate_plan(plan)
 
-            # STAGE 4: Validate + retry with Super
             if not plan_ok:
-                logger.warning(
-                    f"Plan invalid: {plan_err}. "
-                    f"Retrying with Nemotron Super."
-                )
-                plan = await generate_repair_plan_nemotron(
-                    facts,
-                    metrics_context,
-                    model=NEMOTRON_SUPER
-                )
-                plan_ok, plan_err = validate_plan(plan)
+                raise ValueError(f"Retry failed: {plan_err}")
 
-                if not plan_ok:
-                    raise ValueError(f"Retry failed: {plan_err}")
+        result = {**facts, **plan}
+        result["image_url"] = image_url
+        result["opencv_metrics"] = cv_metrics
+        result["confidence_level"] = confidence_level(plan.get("confidence", 0))
+        result["pipeline"] = "opencv-maverick-nemotron"
+        logger.info(f"Pipeline success. Confidence: {plan.get('confidence')}%")
 
-            # Merge everything
-            result = {**facts, **plan}
-            result["image_url"] = image_url
-            result["opencv_metrics"] = cv_metrics
-            result["confidence_level"] = confidence_level(
-                plan.get("confidence", 0)
-            )
-            result["pipeline"] = "opencv-qwen-nemotron"
-            pipeline_used = "opencv-qwen-nemotron"
-            logger.info(
-                f"Pipeline success. "
-                f"Confidence: {plan.get('confidence')}%"
-            )
-
-        except Exception as e:
-            logger.error(
-                f"OpenRouter pipeline failed: {e}. "
-                f"Falling back to Gemini."
-            )
-            result = None
-
-    # ════════════════════════════════════════════════
-    # GEMINI FALLBACK — existing code
-    # ════════════════════════════════════════════════
-    if result is None:
-        try:
-            result = await analyse_image(image_bytes)
-            result["image_url"] = image_url
-            result["opencv_metrics"] = cv_metrics
-            result["pipeline"] = "gemini-fallback"
-            result["confidence"] = 70
-            result["confidence_level"] = "medium"
-            pipeline_used = "gemini-fallback"
-            logger.info("Gemini fallback succeeded")
-        except Exception as e:
-            logger.error(f"Gemini fallback failed: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Analysis failed. Try again or "
-                       "upload a clearer photo."
-            )
+    except Exception as e:
+        logger.error(f"Analysis pipeline failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Analysis failed. Try again or upload a clearer photo.",
+        )
 
     return result

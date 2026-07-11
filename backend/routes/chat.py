@@ -6,7 +6,7 @@ from typing import Optional
 from services.supabase import (
     create_chat, save_message, get_messages, get_chats, delete_chat, verify_token,
 )
-from services.gemini import chat_reply
+from services.openrouter import chat_reply
 from services.rag import embed_text, search_similar, build_context
 from services.retailers import generate_links
 
