@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "task.ai",
+    "slug": "task-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "taskai",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.taskai.app",
+      "buildNumber": "1",
+      "appStoreUrl": "",
+      "infoPlist": {
+        "NSCameraUsageDescription": "task.ai needs camera access to photograph home repairs.",
+        "NSPhotoLibraryUsageDescription": "task.ai needs photo library access to select repair photos.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0A0A"
+      },
+      "package": "com.taskai.app",
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "task.ai needs access to your photos to analyse repairs.",
+          "cameraPermission": "task.ai needs camera access to photograph repairs."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
