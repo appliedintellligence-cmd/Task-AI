@@ -19,6 +19,31 @@ export interface Material {
   links?: { store: string; url: string }[];
 }
 
+export interface RepairState {
+  before: {
+    material: string;
+    colour: string;
+    finish: string;
+    damage_types: string[];
+    damage_location: string;
+    damage_dimensions: string;
+    surrounding_condition: string;
+    moisture_visible: boolean;
+  };
+  after: {
+    material: string;
+    colour: string;
+    finish: string;
+    condition: string;
+    resolutions: Record<string, string>;
+    texture_profile: string;
+    light_profile: string;
+  };
+  inpaint_prompt: string;
+  prompt_confidence: number;
+  engine: string;
+}
+
 export interface AnalyseResult {
   problem: string;
   severity: 'low' | 'medium' | 'high';
@@ -38,6 +63,7 @@ export interface AnalyseResult {
   materials: Material[];
   tools_required: string[];
   safety_equipment: string[];
+  repair_state?: RepairState;
   when_to_call_professional: string;
   inpaint_prompt: string;
   image_url?: string;

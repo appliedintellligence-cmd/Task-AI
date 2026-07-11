@@ -9,6 +9,7 @@ from services.openrouter import (
     NEMOTRON_SUPER,
 )
 from services.validator import validate_facts, validate_plan, confidence_level
+from services.repair_state import build_repair_state
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +67,20 @@ async def analyse(file: UploadFile = File(...)):
             if not plan_ok:
                 raise ValueError(f"Retry failed: {plan_err}")
 
-        result = {**facts, **plan}
+        # ════════════════════════════════════════════════
+        # STAGE 3.5 — Repair State Engine
+        # ════════════════════════════════════════════════
+        repair_state_patch = build_repair_state(facts, plan)
+        logger.info(
+            f"Repair state built. Prompt confidence: "
+            f"{repair_state_patch['repair_state']['prompt_confidence']}%"
+        )
+
+        result = {**facts, **plan, **repair_state_patch}
         result["image_url"] = image_url
         result["opencv_metrics"] = cv_metrics
         result["confidence_level"] = confidence_level(plan.get("confidence", 0))
-        result["pipeline"] = "opencv-maverick-nemotron"
+        result["pipeline"] = "opencv-maverick-nemotron-rse"
         logger.info(f"Pipeline success. Confidence: {plan.get('confidence')}%")
 
     except Exception as e:

@@ -8,7 +8,7 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { AnalyseResult, inpaintImage } from '@/services/api';
+import { AnalyseResult, RepairState, inpaintImage } from '@/services/api';
 
 const SEVERITY_COLOR = { low: '#22C55E', medium: '#F59E0B', high: '#EF4444' };
 const PHASE_LABEL: Record<string, string> = {
@@ -63,6 +63,11 @@ export default function RepairCard({ result, imageUri }: Props) {
         <Stat label="Cost" value={`$${result.estimated_cost_aud_min}–$${result.estimated_cost_aud_max}`} />
         <Stat label="Confidence" value={`${result.confidence}%`} />
       </View>
+
+      {/* Repair State Engine — before/after */}
+      {result.repair_state && (
+        <RepairStatePanel state={result.repair_state} />
+      )}
 
       {/* Root cause */}
       <Section title="Root Cause">
@@ -152,6 +157,100 @@ export default function RepairCard({ result, imageUri }: Props) {
     </ScrollView>
   );
 }
+
+function RepairStatePanel({ state }: { state: RepairState }) {
+  const [expanded, setExpanded] = useState(false);
+  const damageList = state.before.damage_types;
+
+  return (
+    <View style={rsStyles.container}>
+      <TouchableOpacity style={rsStyles.header} onPress={() => setExpanded((v) => !v)}>
+        <View>
+          <Text style={rsStyles.engineLabel}>Repair State Engine</Text>
+          <Text style={rsStyles.confidence}>Prompt confidence {state.prompt_confidence}%</Text>
+        </View>
+        <Text style={rsStyles.chevron}>{expanded ? '▲' : '▼'}</Text>
+      </TouchableOpacity>
+
+      {/* Always-visible before → after strip */}
+      <View style={rsStyles.strip}>
+        <View style={rsStyles.stripSide}>
+          <Text style={rsStyles.stripLabel}>BEFORE</Text>
+          <Text style={rsStyles.stripMaterial}>
+            {[state.before.colour, state.before.finish, state.before.material]
+              .filter(Boolean).join(' ')}
+          </Text>
+          {damageList.length > 0 && (
+            <View style={rsStyles.tags}>
+              {damageList.map((d) => (
+                <View key={d} style={[rsStyles.tag, rsStyles.tagBefore]}>
+                  <Text style={rsStyles.tagText}>{d.replace('_', ' ')}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        <Text style={rsStyles.arrow}>→</Text>
+
+        <View style={rsStyles.stripSide}>
+          <Text style={rsStyles.stripLabel}>AFTER</Text>
+          <Text style={rsStyles.stripMaterial}>
+            {[state.after.colour, state.after.finish, state.after.material]
+              .filter(Boolean).join(' ')}
+          </Text>
+          <View style={rsStyles.tags}>
+            <View style={[rsStyles.tag, rsStyles.tagAfter]}>
+              <Text style={rsStyles.tagText}>repaired ✓</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {expanded && (
+        <View style={rsStyles.detail}>
+          <Text style={rsStyles.detailLabel}>Surface profile</Text>
+          <Text style={rsStyles.detailValue}>{state.after.texture_profile}</Text>
+          <Text style={rsStyles.detailLabel}>Lighting model</Text>
+          <Text style={rsStyles.detailValue}>{state.after.light_profile}</Text>
+          {Object.entries(state.after.resolutions).map(([dmg, res]) => (
+            <View key={dmg} style={rsStyles.resolutionRow}>
+              <Text style={rsStyles.resolutionDmg}>{dmg.replace('_', ' ')}</Text>
+              <Text style={rsStyles.resolutionDesc}>{res}</Text>
+            </View>
+          ))}
+          <Text style={rsStyles.detailLabel}>Inpaint prompt</Text>
+          <Text style={rsStyles.promptText}>{state.inpaint_prompt}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const rsStyles = StyleSheet.create({
+  container: { marginHorizontal: 20, marginBottom: 20, backgroundColor: '#111827', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#1F2937' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 },
+  engineLabel: { fontSize: 12, fontWeight: '700', color: '#F97316', letterSpacing: 0.8, textTransform: 'uppercase' },
+  confidence: { fontSize: 11, color: '#6B7280', marginTop: 2 },
+  chevron: { color: '#4B5563', fontSize: 14 },
+  strip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingBottom: 14, gap: 8 },
+  stripSide: { flex: 1 },
+  stripLabel: { fontSize: 9, fontWeight: '700', color: '#4B5563', letterSpacing: 1, marginBottom: 4 },
+  stripMaterial: { fontSize: 13, fontWeight: '600', color: '#FFFFFF', marginBottom: 6, textTransform: 'capitalize' },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  tag: { borderRadius: 4, paddingHorizontal: 7, paddingVertical: 3 },
+  tagBefore: { backgroundColor: '#EF444420' },
+  tagAfter: { backgroundColor: '#22C55E20' },
+  tagText: { fontSize: 11, color: '#D1D5DB' },
+  arrow: { color: '#F97316', fontSize: 20, fontWeight: '700' },
+  detail: { padding: 14, paddingTop: 0, gap: 6 },
+  detailLabel: { fontSize: 10, fontWeight: '700', color: '#4B5563', letterSpacing: 0.8, textTransform: 'uppercase', marginTop: 8 },
+  detailValue: { fontSize: 13, color: '#9CA3AF', lineHeight: 19 },
+  resolutionRow: { backgroundColor: '#1F2937', borderRadius: 8, padding: 10, marginTop: 4 },
+  resolutionDmg: { fontSize: 11, fontWeight: '700', color: '#F97316', textTransform: 'capitalize', marginBottom: 2 },
+  resolutionDesc: { fontSize: 12, color: '#9CA3AF', lineHeight: 18 },
+  promptText: { fontSize: 11, color: '#6B7280', lineHeight: 18, fontStyle: 'italic', marginTop: 2 },
+});
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
