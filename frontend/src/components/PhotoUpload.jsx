@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { apiFetch } from '../lib/api'
 
 export default function PhotoUpload({ onComplete }) {
   const [preview, setPreview] = useState(null)
@@ -7,6 +8,11 @@ export default function PhotoUpload({ onComplete }) {
   const [error, setError] = useState(null)
   const [dragging, setDragging] = useState(false)
   const inputRef = useRef()
+
+  // Revoke the preview blob URL when it is replaced or on unmount
+  useEffect(() => {
+    return () => { if (preview) URL.revokeObjectURL(preview) }
+  }, [preview])
 
   function handleFile(selected) {
     if (!selected) return
@@ -23,19 +29,17 @@ export default function PhotoUpload({ onComplete }) {
   }
 
   async function handleAnalyse() {
-    if (!file) return
+    if (!file || loading) return
     setLoading(true)
     setError(null)
     try {
       const formData = new FormData()
       formData.append('file', file)
       const apiUrl = import.meta.env.VITE_API_URL
-      const res = await fetch(`${apiUrl}/analyse`, { method: 'POST', body: formData })
-      if (!res.ok) throw new Error('Analysis failed. Please try again.')
-      const data = await res.json()
+      const data = await apiFetch(`${apiUrl}/analyse`, { method: 'POST', body: formData })
       onComplete(data)
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Analysis failed. Please try again.')
     } finally {
       setLoading(false)
     }

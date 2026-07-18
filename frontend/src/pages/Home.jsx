@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { apiFetch } from '../lib/api'
 import PhotoUpload from '../components/PhotoUpload'
 
 export default function Home() {
@@ -24,12 +25,13 @@ export default function Home() {
 
   async function fetchRecentJobs(userId, token) {
     const apiUrl = import.meta.env.VITE_API_URL
-    const res = await fetch(`${apiUrl}/jobs/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (res.ok) {
-      const data = await res.json()
+    try {
+      const data = await apiFetch(`${apiUrl}/jobs/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       setRecentJobs(data.slice(0, 5))
+    } catch {
+      // non-fatal on the landing page
     }
   }
 

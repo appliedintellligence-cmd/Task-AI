@@ -29,6 +29,18 @@ export default function ChatInput({ onSend, loading }) {
     if (transcript) setText(transcript)
   }, [transcript])
 
+  // Revoke the preview blob URL when it is replaced or on unmount
+  useEffect(() => {
+    return () => { if (imagePreview) URL.revokeObjectURL(imagePreview) }
+  }, [imagePreview])
+
+  // Let other components (e.g. clarification prompt) open the file picker
+  useEffect(() => {
+    const open = () => fileRef.current?.click()
+    window.addEventListener('taskai-open-file-picker', open)
+    return () => window.removeEventListener('taskai-open-file-picker', open)
+  }, [])
+
   // Auto-resize textarea up to 4 rows (~96px)
   useEffect(() => {
     const ta = textareaRef.current

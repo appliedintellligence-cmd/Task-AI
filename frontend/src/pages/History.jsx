@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { apiFetch, ApiError } from '../lib/api'
 
 export default function History() {
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [user, setUser] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        navigate('/')
+        navigate('/login', { replace: true })
         return
       }
       setUser(session.user)
@@ -21,14 +23,29 @@ export default function History() {
 
   async function fetchJobs(userId, token) {
     const apiUrl = import.meta.env.VITE_API_URL
-    const res = await fetch(`${apiUrl}/jobs/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (res.ok) {
-      const data = await res.json()
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await apiFetch(`${apiUrl}/jobs/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       setJobs(data)
+    } catch (err) {
+      if (err instanceof ApiError && err.isAuth) {
+        navigate('/login', { replace: true })
+        return
+      }
+      setError(err.message || 'Could not load your repair history.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
+  }
+
+  function handleRetry() {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) fetchJobs(session.user.id, session.access_token)
+      else navigate('/login', { replace: true })
+    })
   }
 
   const SEVERITY_COLOURS = {
@@ -51,6 +68,18 @@ export default function History() {
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <p className="text-5xl mb-4">⚠️</p>
+            <p className="text-lg font-medium text-gray-700">Couldn’t load your history</p>
+            <p className="text-sm mt-1 text-gray-500">{error}</p>
+            <button
+              onClick={handleRetry}
+              className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+            >
+              Try again
+            </button>
           </div>
         ) : jobs.length === 0 ? (
           <div className="text-center py-20 text-gray-400">

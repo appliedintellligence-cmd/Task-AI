@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import RetailerLinks from './RetailerLinks'
 import { useSpeech } from '../hooks/useSpeech'
+import { apiFetch } from '../lib/api'
 
 const SEVERITY_CLS = {
   low: 'bg-green-100 text-green-700',
@@ -139,20 +140,21 @@ function RepairResult({ result, messageId }) {
   const [copied, setCopied] = useState(false)
   const [repairedUrl, setRepairedUrl] = useState(null)
   const [generating, setGenerating] = useState(false)
+  const [previewError, setPreviewError] = useState(null)
 
   async function generatePreview() {
+    if (generating) return
     setGenerating(true)
+    setPreviewError(null)
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/inpaint`, {
+      const data = await apiFetch(`${import.meta.env.VITE_API_URL}/inpaint`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ inpaint_prompt: result.inpaint_prompt }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.detail || 'Generation failed')
       setRepairedUrl(data.repaired_image_url)
     } catch (err) {
-      console.error('Inpaint error:', err)
+      setPreviewError(err.message || 'Could not generate preview. Please try again.')
     } finally {
       setGenerating(false)
     }
@@ -191,12 +193,17 @@ function RepairResult({ result, messageId }) {
                   Generating...
                 </div>
               ) : (
-                <button
-                  onClick={generatePreview}
-                  className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition"
-                >
-                  ✨ Generate repaired preview
-                </button>
+                <div className="flex flex-col items-center gap-1.5">
+                  <button
+                    onClick={generatePreview}
+                    className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition"
+                  >
+                    ✨ {previewError ? 'Try again' : 'Generate repaired preview'}
+                  </button>
+                  {previewError && (
+                    <p className="text-xs text-red-600 text-center px-3">{previewError}</p>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -262,6 +269,7 @@ function RepairResult({ result, messageId }) {
             <p className="text-sm font-semibold text-amber-800 mb-1">Need more info</p>
             <p className="text-sm text-amber-700">{result.clarification_question}</p>
             <button
+              onClick={() => window.dispatchEvent(new Event('taskai-open-file-picker'))}
               className="mt-3 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1.5 rounded-full transition-colors">
               Upload another photo
             </button>
@@ -422,8 +430,8 @@ function MaterialsSection({ materials }) {
   )
 }
 
-export default function ChatMessage({ message }) {
-  const { id, role, content, result, image_url, error, timestamp, materials } = message
+export default function ChatMessage({ message, onRetry }) {
+  const { id, role, content, result, image_url, error, timestamp, materials, canRetry } = message
 
   if (role === 'user') {
     return (
@@ -459,7 +467,17 @@ export default function ChatMessage({ message }) {
                 : 'bg-white border border-gray-200'
             }`}>
               {error ? (
-                <span>{content}</span>
+                <div className="flex items-center justify-between gap-3">
+                  <span>{content}</span>
+                  {canRetry && onRetry && (
+                    <button
+                      onClick={onRetry}
+                      className="flex-shrink-0 text-xs font-semibold text-red-700 underline hover:no-underline"
+                    >
+                      Try again
+                    </button>
+                  )}
+                </div>
               ) : (
                 <div className="flex items-start justify-between gap-2 px-4 py-4">
                   <div className="prose prose-sm prose-slate max-w-none

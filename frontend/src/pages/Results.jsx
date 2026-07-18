@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { apiFetch } from '../lib/api'
 import RepairSteps from '../components/RepairSteps'
 import MaterialsList from '../components/MaterialsList'
 import RetailerLinks from '../components/RetailerLinks'
@@ -23,6 +24,7 @@ export default function Results() {
   const [user, setUser] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState(null)
   const [copied, setCopied] = useState(false)
 
   const result = state?.result
@@ -42,22 +44,28 @@ export default function Results() {
       return
     }
     setSaving(true)
-    const session = (await supabase.auth.getSession()).data.session
-    const apiUrl = import.meta.env.VITE_API_URL
-    await fetch(`${apiUrl}/jobs`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        user_id: user.id,
-        image_url: result.image_url,
-        result,
-      }),
-    })
-    setSaving(false)
-    setSaved(true)
+    setSaveError(null)
+    try {
+      const session = (await supabase.auth.getSession()).data.session
+      const apiUrl = import.meta.env.VITE_API_URL
+      await apiFetch(`${apiUrl}/jobs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          image_url: result.image_url,
+          result,
+        }),
+      })
+      setSaved(true)
+    } catch (err) {
+      setSaveError(err.message || 'Could not save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   function handleShare() {
@@ -88,6 +96,14 @@ export default function Results() {
           </button>
         </div>
       </header>
+
+      {saveError && (
+        <div className="max-w-3xl mx-auto px-6 pt-4">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+            {saveError}
+          </div>
+        </div>
+      )}
 
       <main className="max-w-3xl mx-auto px-6 py-10 space-y-8">
         {/* Problem summary */}

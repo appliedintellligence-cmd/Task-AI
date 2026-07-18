@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, signOut } from '../lib/supabase'
+import { apiFetch, ApiError } from '../lib/api'
 import { useChat } from '../hooks/useChat'
 import { useSpeech } from '../hooks/useSpeech'
 import ChatMessage from '../components/ChatMessage'
@@ -12,7 +13,7 @@ const API = import.meta.env.VITE_API_URL
 
 export default function ChatPage() {
   const navigate = useNavigate()
-  const { messages, loading, sendMessage, loadJob, loadChat, clearMessages, activeChatId } = useChat()
+  const { messages, loading, sendMessage, retryLast, loadJob, loadChat, clearMessages, activeChatId } = useChat()
   const { speak } = useSpeech()
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
@@ -58,8 +59,16 @@ export default function ChatPage() {
   }, [messages])
 
   async function fetchJobs(userId, tok) {
-    const res = await fetch(`${API}/jobs/${userId}`, { headers: { Authorization: `Bearer ${tok}` } })
-    if (res.ok) setJobs(await res.json())
+    try {
+      const data = await apiFetch(`${API}/jobs/${userId}`, { headers: { Authorization: `Bearer ${tok}` } })
+      setJobs(data)
+    } catch (err) {
+      if (err instanceof ApiError && err.isAuth) {
+        await signOut()
+        navigate('/login', { replace: true })
+      }
+      // otherwise non-fatal: keep whatever jobs we already have
+    }
   }
 
   function handleNewChat() {
@@ -175,7 +184,7 @@ export default function ChatPage() {
               </p>
             </div>
           ) : (
-            messages.map((msg) => <ChatMessage key={msg.id} message={msg} />)
+            messages.map((msg) => <ChatMessage key={msg.id} message={msg} onRetry={retryLast} />)
           )}
 
           {loading && (
