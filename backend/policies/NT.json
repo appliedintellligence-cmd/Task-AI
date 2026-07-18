@@ -1,0 +1,11 @@
+{
+  "jurisdiction": "NT",
+  "policy_version": "0.0.0-unverified",
+  "verified": false,
+  "regulator": "",
+  "source_url": "",
+  "effective_date": null,
+  "last_reviewed_at": null,
+  "notes": "Placeholder unverified policy for Northern Territory (NT). DIY legality rules have not yet been researched or verified. While unverified, all work resolves to legal_status 'unclear' and is never treated as permitted. Populate 'rules' and set verified=true only after confirming against the official state/territory regulator.",
+  "rules": []
+}
