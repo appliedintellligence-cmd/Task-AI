@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import EligibilityCard from './EligibilityCard'
 import remarkGfm from 'remark-gfm'
 import RetailerLinks from './RetailerLinks'
 import { useSpeech } from '../hooks/useSpeech'
@@ -141,6 +142,7 @@ function RepairResult({ result, messageId }) {
   const [repairedUrl, setRepairedUrl] = useState(null)
   const [generating, setGenerating] = useState(false)
   const [previewError, setPreviewError] = useState(null)
+  const [instructionsAllowed, setInstructionsAllowed] = useState(false)
 
   async function generatePreview() {
     if (generating) return
@@ -161,7 +163,7 @@ function RepairResult({ result, messageId }) {
   }
 
   function handleCopy() {
-    const steps = result.steps
+    const steps = instructionsAllowed ? result.steps : []
       ?.map((s, i) => `${i + 1}. ${s.title}: ${s.description}`)
       .join('\n') ?? ''
     navigator.clipboard.writeText(`${result.problem}\n\n${steps}`).catch(() => {})
@@ -175,7 +177,7 @@ function RepairResult({ result, messageId }) {
         <img src={result.image_url} alt="" className="w-full max-h-52 object-cover" />
       )}
 
-      {result.inpaint_prompt && (
+      {instructionsAllowed && result.inpaint_prompt && (
         <div className="border-t border-gray-100">
           {repairedUrl ? (
             <div>
@@ -211,32 +213,7 @@ function RepairResult({ result, messageId }) {
       )}
 
       <div className="p-4 space-y-4">
-        {result.diy_assessment && (
-          <div className={`rounded-xl border p-3 ${result.diy_assessment.safety_level == null ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-gray-900">
-                  DIY eligibility · {result.diy_assessment.jurisdiction || 'State required'}
-                </p>
-                <p className="text-xs text-gray-600 mt-0.5">
-                  {result.diy_assessment.safety_level == null
-                    ? result.diy_assessment.assessment_status.replaceAll('_', ' ')
-                    : `Safety level ${result.diy_assessment.safety_level}`}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => window.dispatchEvent(new Event('taskai-open-settings'))}
-                className="text-xs text-blue-700 underline"
-                aria-label="Change state or territory"
-              >
-                Change state
-              </button>
-            </div>
-            {result.requires_reassessment && <p className="text-xs text-amber-700 mt-2">State changed. Reassess this repair before using instructions.</p>}
-            {result.diy_assessment.reason && <p className="text-xs text-gray-600 mt-2">{result.diy_assessment.reason}</p>}
-          </div>
-        )}
+        {result.diy_assessment && <EligibilityCard assessment={result.diy_assessment} onPermissionChange={setInstructionsAllowed} />}
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -315,7 +292,7 @@ function RepairResult({ result, messageId }) {
         )}
 
         {/* Steps */}
-        {result.steps?.length > 0 && (
+        {instructionsAllowed && result.steps?.length > 0 && (
           <div>
             <button
               onClick={() => setStepsOpen((o) => !o)}
@@ -351,7 +328,7 @@ function RepairResult({ result, messageId }) {
         )}
 
         {/* Materials table */}
-        {result.materials?.length > 0 && (
+        {instructionsAllowed && result.materials?.length > 0 && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">Materials</p>
             <div className="border border-gray-200 rounded-xl overflow-hidden">

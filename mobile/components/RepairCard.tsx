@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { AnalyseResult, RepairState, inpaintImage } from '@/services/api';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SEVERITY_COLOR = { low: '#22C55E', medium: '#F59E0B', high: '#EF4444' };
 const PHASE_LABEL: Record<string, string> = {
@@ -30,6 +31,14 @@ export default function RepairCard({ result, imageUri }: Props) {
   const [inpaintUrl, setInpaintUrl] = useState<string | null>(null);
   const [inpainting, setInpainting] = useState(false);
   const [showInpaint, setShowInpaint] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const assessment = result.diy_assessment;
+  const ackKey = `taskai:precaution:${assessment?.validation_version || 'unknown'}:${assessment?.policy_source?.policy_version || 'unknown'}:${assessment?.assessed_at || 'unknown'}`;
+  const completeLevel = assessment?.assessment_status === 'complete' ? assessment.safety_level : null;
+  const instructionsAllowed = completeLevel === 1 || (completeLevel === 2 && acknowledged);
+
+  useEffect(() => { AsyncStorage.getItem(ackKey).then((value) => setAcknowledged(value === 'true')); }, [ackKey]);
+  async function acknowledge(){await AsyncStorage.setItem(ackKey,'true');setAcknowledged(true)}
 
   async function handleInpaint() {
     if (inpaintUrl) { setShowInpaint(true); return; }
@@ -58,16 +67,21 @@ export default function RepairCard({ result, imageUri }: Props) {
         <Text style={styles.material}>{result.surface_material}</Text>
       </View>
 
-      {result.diy_assessment && (
+      {assessment && (
         <View style={styles.eligibility}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.eligibilityTitle}>DIY eligibility · {result.diy_assessment.jurisdiction || 'State required'}</Text>
+            <Text style={styles.eligibilityTitle}>DIY eligibility · {assessment.jurisdiction || 'State required'}</Text>
             <Text style={styles.eligibilityStatus}>
-              {result.diy_assessment.safety_level == null
-                ? result.diy_assessment.assessment_status.replace(/_/g, ' ')
-                : `Safety level ${result.diy_assessment.safety_level}`}
+              {completeLevel == null ? assessment.assessment_status.replace(/_/g, ' ') : `Level ${completeLevel} — ${['','Safe for DIY','DIY with caution','Professional required','Emergency'][completeLevel]}`}
             </Text>
-            <Text style={styles.eligibilityReason}>{result.diy_assessment.reason}</Text>
+            <Text style={styles.eligibilityReason}>{assessment.reason}</Text>
+            <Text style={styles.eligibilityReason}>Legal: {assessment.legal_status || 'not available'} · Safety: {assessment.safety_status || 'not available'}</Text>
+            {assessment.warning_signs?.map((item) => <Text key={item} style={styles.reassessment}>Stop condition: {item}</Text>)}
+            {assessment.allowed_actions?.map((item) => <Text key={item} style={styles.eligibilityReason}>Allowed: {item}</Text>)}
+            {assessment.prohibited_actions?.map((item) => <Text key={item} style={styles.reassessment}>Do not: {item}</Text>)}
+            {completeLevel === 2 && !acknowledged && <TouchableOpacity onPress={acknowledge} style={styles.ackButton}><Text style={styles.ackText}>Acknowledge precautions</Text></TouchableOpacity>}
+            {completeLevel === 2 && acknowledged && <Text style={styles.eligibilityReason}>✓ Precautions acknowledged for this version</Text>}
+            {(completeLevel === 3 || completeLevel === 4 || completeLevel == null) && <Text style={styles.reassessment}>Guided repair is locked.</Text>}
             {result.requires_reassessment && <Text style={styles.reassessment}>State changed — reassess before using instructions.</Text>}
           </View>
           <TouchableOpacity accessibilityLabel="Change state or territory" onPress={() => router.push('/(tabs)/settings')}>
@@ -85,7 +99,7 @@ export default function RepairCard({ result, imageUri }: Props) {
       </View>
 
       {/* Repair State Engine — before/after */}
-      {result.repair_state && (
+      {instructionsAllowed && result.repair_state && (
         <RepairStatePanel state={result.repair_state} />
       )}
 
@@ -98,7 +112,7 @@ export default function RepairCard({ result, imageUri }: Props) {
       </Section>
 
       {/* Steps */}
-      <Section title="Repair Steps">
+      {instructionsAllowed && <Section title="Repair Steps">
         {result.steps.map((step) => (
           <View key={step.step_number} style={styles.step}>
             <View style={styles.stepHeader}>
@@ -120,10 +134,10 @@ export default function RepairCard({ result, imageUri }: Props) {
             )}
           </View>
         ))}
-      </Section>
+      </Section>}
 
       {/* Materials */}
-      <Section title="Materials">
+      {instructionsAllowed && <Section title="Materials">
         {result.materials.map((m, i) => (
           <View key={i} style={styles.materialRow}>
             <View style={{ flex: 1 }}>
@@ -133,7 +147,7 @@ export default function RepairCard({ result, imageUri }: Props) {
             <Text style={styles.materialCost}>${m.estimated_cost_aud}</Text>
           </View>
         ))}
-      </Section>
+      </Section>}
 
       {/* Safety */}
       {result.safety_notes.length > 0 && (
@@ -145,9 +159,9 @@ export default function RepairCard({ result, imageUri }: Props) {
       )}
 
       {/* Tools */}
-      <Section title="Tools Required">
+      {instructionsAllowed && <Section title="Tools Required">
         <Text style={styles.body}>{result.tools_required.join(' · ')}</Text>
-      </Section>
+      </Section>}
 
       {/* When to call pro */}
       <Section title="When to Call a Professional">
@@ -155,15 +169,15 @@ export default function RepairCard({ result, imageUri }: Props) {
       </Section>
 
       {/* Inpaint preview */}
-      <TouchableOpacity style={styles.inpaintBtn} onPress={handleInpaint} disabled={inpainting}>
+      {instructionsAllowed && <TouchableOpacity style={styles.inpaintBtn} onPress={handleInpaint} disabled={inpainting}>
         {inpainting ? (
           <ActivityIndicator color="#0A0A0A" />
         ) : (
           <Text style={styles.inpaintBtnText}>✨ See Repaired Preview</Text>
         )}
-      </TouchableOpacity>
+      </TouchableOpacity>}
 
-      {showInpaint && inpaintUrl && (
+      {instructionsAllowed && showInpaint && inpaintUrl && (
         <View style={styles.inpaintContainer}>
           <Text style={styles.inpaintLabel}>AI-Generated Repair Preview</Text>
           <Image source={{ uri: inpaintUrl }} style={styles.inpaintImage} resizeMode="cover" />
@@ -298,6 +312,8 @@ const styles = StyleSheet.create({
   problem: { fontSize: 22, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 },
   material: { fontSize: 14, color: '#9CA3AF' },
   eligibility: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 16, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#92400E', backgroundColor: '#1C1917' },
+  ackButton: { minHeight: 44, marginTop: 12, borderRadius: 10, backgroundColor: '#F28B45', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+  ackText: { color: '#102F36', fontWeight: '800', fontSize: 13 },
   eligibilityTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   eligibilityStatus: { color: '#F97316', fontSize: 12, marginTop: 3, textTransform: 'capitalize' },
   eligibilityReason: { color: '#9CA3AF', fontSize: 12, lineHeight: 17, marginTop: 6 },

@@ -73,6 +73,16 @@ export interface AnalyseResult {
     safety_level: 1 | 2 | 3 | 4 | null;
     assessment_status: 'complete' | 'assessment_pending' | 'more_information_required' | 'jurisdiction_required' | 'policy_unverified';
     reason: string;
+    legal_status?: string;
+    safety_status?: string;
+    warning_signs?: string[];
+    questions_required?: string[];
+    allowed_actions?: string[];
+    prohibited_actions?: string[];
+    professional_type?: string | null;
+    validation_version?: string;
+    assessed_at?: string;
+    policy_source?: { regulator?: string; url?: string; last_reviewed_at?: string; policy_version?: string };
   };
   requires_reassessment?: boolean;
 }

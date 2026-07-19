@@ -26,8 +26,8 @@ Starting commit: `1477828`
 | Phase | Status | Commit | Notes |
 |---|---|---|---|
 | 8 — Responsive application shell | COMPLETE | `868131d` | Responsive web product navigation and mobile five-tab shell with central Scan action. |
-| 9 — Camera-first dashboard | IN PROGRESS | — | Phase 8 gate passed. |
-| 10 — DIY eligibility interface | NOT STARTED | — | Depends on Phase 9. |
+| 9 — Camera-first dashboard | COMPLETE | `b0303f1` | Camera/gallery/drop workflow with validation, progress, retry and jurisdiction gate. |
+| 10 — DIY eligibility interface | COMPLETE | Pending commit | Four authoritative levels, unresolved locks and versioned Level 2 acknowledgement. |
 | 11 — Diagnosis-result redesign | NOT STARTED | — | Depends on Phase 10. |
 | 12 — Guided repair mode | NOT STARTED | — | Depends on Phase 11. |
 | 13 — Public landing page | NOT STARTED | — | Depends on Phase 12. |
@@ -53,3 +53,23 @@ Starting commit: `1477828`
 - **Commit hash:** `868131d`.
 - **Known limitations:** Browser/device screenshot automation is not configured; responsive constraints were reviewed structurally at the required breakpoints. Existing Vite plugin deprecation and bundle-size advisories remain.
 - **Next phase:** Phase 9 — Camera-first dashboard.
+
+## Phase 9 — Camera-first dashboard
+
+- **Status:** COMPLETE.
+- **Files changed:** Web Home/photo workflow, shared diagnosis validation/progress helpers and tests, mobile Scan progress and duplicate-submit guard.
+- **Tests run:** Web lint, 10 web tests, web production build, mobile TypeScript.
+- **Results:** All passed; existing build advisories remain.
+- **Commit hash:** `b0303f1`.
+- **Known limitations:** The backend accepts one image per analysis request; the interface safely requests replacement/wide/close-up evidence without pretending multi-image upload is supported.
+- **Next phase:** Phase 10 — DIY eligibility interface.
+
+## Phase 10 — DIY eligibility interface
+
+- **Status:** COMPLETE — pending phase commit.
+- **Files changed:** Shared eligibility policy/UI helpers and tests, accessible web eligibility card, web instruction/preview locks, mobile assessment metadata and versioned acknowledgement/locks.
+- **Tests run:** 20 web tests, web build, backend 142 tests, mobile TypeScript.
+- **Results:** Passed after one focused syntax repair in the web copy helper.
+- **Commit hash:** Pending.
+- **Known limitations:** Acknowledgement is persisted locally against assessment and policy versions; backend remains authoritative and continues stripping blocked instructions before delivery.
+- **Next phase:** Phase 11 — Diagnosis-result redesign.
