@@ -68,6 +68,13 @@ export interface AnalyseResult {
   inpaint_prompt: string;
   image_url?: string;
   pipeline: string;
+  diy_assessment?: {
+    jurisdiction: string | null;
+    safety_level: 1 | 2 | 3 | 4 | null;
+    assessment_status: 'complete' | 'assessment_pending' | 'more_information_required' | 'jurisdiction_required' | 'policy_unverified';
+    reason: string;
+  };
+  requires_reassessment?: boolean;
 }
 
 export interface ChatResponse {
@@ -104,31 +111,32 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
-export async function analyseImage(imageUri: string, filename: string): Promise<AnalyseResult> {
+export async function analyseImage(imageUri: string, filename: string, jurisdiction: string | null): Promise<AnalyseResult> {
   const body = new FormData();
   body.append('file', { uri: imageUri, name: filename, type: 'image/jpeg' } as any);
+  if (jurisdiction) body.append('jurisdiction', jurisdiction);
   return request<AnalyseResult>('/analyse', { method: 'POST', body });
 }
 
 export async function sendChat(
   message: string,
   chatId?: string,
-  userId?: string,
   token?: string,
+  jurisdiction?: string | null,
 ): Promise<ChatResponse> {
   return request<ChatResponse>(
     '/chat',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, chat_id: chatId, user_id: userId }),
+      body: JSON.stringify({ message, chat_id: chatId, jurisdiction: jurisdiction || undefined }),
     },
     token,
   );
 }
 
-export async function getChats(userId: string, token: string) {
-  return request<any[]>(`/chats/${userId}`, {}, token);
+export async function getChats(token: string) {
+  return request<any[]>('/chats', {}, token);
 }
 
 export async function getChatMessages(chatId: string, token: string) {
@@ -148,7 +156,6 @@ export async function inpaintImage(prompt: string): Promise<{ repaired_image_url
 }
 
 export async function saveJob(
-  userId: string,
   imageUrl: string | null,
   result: AnalyseResult,
   token: string,
@@ -158,12 +165,12 @@ export async function saveJob(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, image_url: imageUrl, result }),
+      body: JSON.stringify({ image_url: imageUrl, result }),
     },
     token,
   );
 }
 
-export async function getJobs(userId: string, token: string): Promise<Job[]> {
-  return request<Job[]>(`/jobs/${userId}`, {}, token);
+export async function getJobs(token: string): Promise<Job[]> {
+  return request<Job[]>('/jobs', {}, token);
 }

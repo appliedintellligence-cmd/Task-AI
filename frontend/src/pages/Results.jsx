@@ -55,7 +55,6 @@ export default function Results() {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          user_id: user.id,
           image_url: result.image_url,
           result,
         }),
@@ -112,6 +111,17 @@ export default function Results() {
             <img src={result.image_url} alt="Repair" className="w-full h-56 object-cover rounded-xl mb-6" />
           )}
           <h1 className="text-2xl font-bold text-gray-900 mb-3">{result.problem}</h1>
+          {result.diy_assessment && (
+            <div className="mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200 text-sm">
+              <p className="font-semibold text-blue-900">Assessment jurisdiction: {result.diy_assessment.jurisdiction || 'Not selected'}</p>
+              <p className="text-blue-700 capitalize">
+                {result.diy_assessment.safety_level == null
+                  ? result.diy_assessment.assessment_status.replaceAll('_', ' ')
+                  : `Safety level ${result.diy_assessment.safety_level}`}
+              </p>
+              <button type="button" onClick={() => navigate('/')} className="text-xs text-blue-700 underline mt-1">Change state and reassess</button>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2 mb-4">
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${SEVERITY_COLOURS[result.severity] || 'bg-gray-100 text-gray-700'}`}>
               {result.severity} severity

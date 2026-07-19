@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { AnalyseResult, RepairState, inpaintImage } from '@/services/api';
+import { useRouter } from 'expo-router';
 
 const SEVERITY_COLOR = { low: '#22C55E', medium: '#F59E0B', high: '#EF4444' };
 const PHASE_LABEL: Record<string, string> = {
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export default function RepairCard({ result, imageUri }: Props) {
+  const router = useRouter();
   const [inpaintUrl, setInpaintUrl] = useState<string | null>(null);
   const [inpainting, setInpainting] = useState(false);
   const [showInpaint, setShowInpaint] = useState(false);
@@ -55,6 +57,24 @@ export default function RepairCard({ result, imageUri }: Props) {
         <Text style={styles.problem}>{result.problem}</Text>
         <Text style={styles.material}>{result.surface_material}</Text>
       </View>
+
+      {result.diy_assessment && (
+        <View style={styles.eligibility}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.eligibilityTitle}>DIY eligibility · {result.diy_assessment.jurisdiction || 'State required'}</Text>
+            <Text style={styles.eligibilityStatus}>
+              {result.diy_assessment.safety_level == null
+                ? result.diy_assessment.assessment_status.replace(/_/g, ' ')
+                : `Safety level ${result.diy_assessment.safety_level}`}
+            </Text>
+            <Text style={styles.eligibilityReason}>{result.diy_assessment.reason}</Text>
+            {result.requires_reassessment && <Text style={styles.reassessment}>State changed — reassess before using instructions.</Text>}
+          </View>
+          <TouchableOpacity accessibilityLabel="Change state or territory" onPress={() => router.push('/(tabs)/settings')}>
+            <Text style={styles.changeState}>Change</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Stats row */}
       <View style={styles.statsRow}>
@@ -277,6 +297,12 @@ const styles = StyleSheet.create({
   severityText: { fontSize: 11, fontWeight: '700', letterSpacing: 1 },
   problem: { fontSize: 22, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 },
   material: { fontSize: 14, color: '#9CA3AF' },
+  eligibility: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 16, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#92400E', backgroundColor: '#1C1917' },
+  eligibilityTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  eligibilityStatus: { color: '#F97316', fontSize: 12, marginTop: 3, textTransform: 'capitalize' },
+  eligibilityReason: { color: '#9CA3AF', fontSize: 12, lineHeight: 17, marginTop: 6 },
+  reassessment: { color: '#FBBF24', fontSize: 12, marginTop: 6 },
+  changeState: { color: '#F97316', fontSize: 12, fontWeight: '700', paddingLeft: 10 },
   statsRow: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 8, backgroundColor: '#1A1A1A', borderRadius: 12, padding: 16 },
   stat: { flex: 1, alignItems: 'center' },
   statValue: { fontSize: 14, fontWeight: '700', color: '#F97316', marginBottom: 2 },

@@ -1,10 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { apiFetch, ApiError } from '../lib/api'
+import { appendConfirmedJurisdiction } from '../lib/jurisdiction'
 
 const API = import.meta.env.VITE_API_URL
 
-export function useChat() {
+export function useChat(jurisdiction) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
   const [activeChatId, setActiveChatId] = useState(null)
@@ -32,6 +33,7 @@ export function useChat() {
       if (imageFile) {
         const form = new FormData()
         form.append('file', imageFile)
+        appendConfirmedJurisdiction(form, jurisdiction)
         const result = await apiFetch(`${API}/analyse`, { method: 'POST', body: form })
 
         // Save to DB non-blocking
@@ -39,7 +41,7 @@ export function useChat() {
           apiFetch(`${API}/jobs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ user_id: session.user.id, image_url: result.image_url, result }),
+            body: JSON.stringify({ image_url: result.image_url, result }),
           }).catch(() => {})
         }
 
@@ -59,7 +61,7 @@ export function useChat() {
           body: JSON.stringify({
             chat_id: activeChatId || undefined,
             message: text,
-            user_id: session?.user?.id,
+            jurisdiction: jurisdiction || undefined,
           }),
         })
 
@@ -89,7 +91,7 @@ export function useChat() {
     } finally {
       setLoading(false)
     }
-  }, [activeChatId])
+  }, [activeChatId, jurisdiction])
 
   const sendMessage = useCallback(async (text, imageFile) => {
     if (sendingRef.current) return
@@ -181,5 +183,29 @@ export function useChat() {
     setActiveChatId(null)
   }, [revokeAllUrls])
 
-  return { messages, loading, sendMessage, retryLast, loadJob, loadChat, clearMessages, activeChatId }
+  const requireReassessment = useCallback(() => {
+    setMessages((current) => current.map((message) => {
+      if (!message.result) return message
+      return {
+        ...message,
+        result: {
+          ...message.result,
+          steps: [],
+          materials: [],
+          tools_required: [],
+          inpaint_prompt: null,
+          instructions_suppressed: true,
+          requires_reassessment: true,
+          diy_assessment: message.result.diy_assessment ? {
+            ...message.result.diy_assessment,
+            safety_level: null,
+            assessment_status: 'assessment_pending',
+            reason: 'Your profile jurisdiction changed. Reassess this repair before using instructions.',
+          } : message.result.diy_assessment,
+        },
+      }
+    }))
+  }, [])
+
+  return { messages, loading, sendMessage, retryLast, loadJob, loadChat, clearMessages, requireReassessment, activeChatId }
 }

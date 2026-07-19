@@ -22,7 +22,7 @@ export default function HistoryScreen() {
     if (!user || !token) return;
     isRefresh ? setRefreshing(true) : setLoading(true);
     try {
-      const data = await getJobs(user.id, token);
+      const data = await getJobs(token);
       setJobs(data);
     } catch {
       // silently ignore
@@ -102,6 +102,7 @@ export default function HistoryScreen() {
               <View style={styles.cardBody}>
                 <Text style={styles.jobProblem} numberOfLines={2}>{item.result.problem}</Text>
                 <Text style={styles.jobMaterial}>{item.result.surface_material}</Text>
+                <Text style={styles.jobMaterial}>Assessment: {item.result.diy_assessment?.jurisdiction || 'Reassessment required'}</Text>
                 <View style={styles.jobMeta}>
                   <View style={[styles.severityDot, { backgroundColor: SEVERITY_COLOR[item.result.severity] }]} />
                   <Text style={styles.jobMetaText}>{item.result.severity}</Text>

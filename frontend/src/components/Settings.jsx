@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { JURISDICTIONS } from '../lib/jurisdiction'
 
 const LANG_OPTIONS = [
   { value: 'en-AU', label: 'English (Australia)' },
@@ -28,10 +29,15 @@ function Toggle({ label, description, value, onChange }) {
   )
 }
 
-export default function Settings({ open, onClose }) {
+export default function Settings({ open, onClose, jurisdiction, onJurisdictionChange }) {
   const [autoRead, setAutoRead] = useState(() => localStorage.getItem('taskai_autoread') === 'true')
   const [autoSubmit, setAutoSubmit] = useState(() => localStorage.getItem('taskai_autosubmit') === 'true')
   const [lang, setLang] = useState(() => localStorage.getItem('taskai_voice_lang') || 'en-AU')
+  const [selectedJurisdiction, setSelectedJurisdiction] = useState(jurisdiction || '')
+  const [jurisdictionError, setJurisdictionError] = useState('')
+  const [savingJurisdiction, setSavingJurisdiction] = useState(false)
+
+  useEffect(() => setSelectedJurisdiction(jurisdiction || ''), [jurisdiction, open])
 
   function handleAutoRead(val) {
     setAutoRead(val)
@@ -48,6 +54,22 @@ export default function Settings({ open, onClose }) {
     localStorage.setItem('taskai_voice_lang', val)
   }
 
+  async function handleJurisdictionSave() {
+    if (!selectedJurisdiction) {
+      setJurisdictionError('Select your state or territory')
+      return
+    }
+    setSavingJurisdiction(true)
+    setJurisdictionError('')
+    try {
+      await onJurisdictionChange(selectedJurisdiction)
+    } catch (error) {
+      setJurisdictionError(error.message || 'Could not save your state or territory')
+    } finally {
+      setSavingJurisdiction(false)
+    }
+  }
+
   if (!open) return null
 
   return (
@@ -57,7 +79,7 @@ export default function Settings({ open, onClose }) {
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-gray-900">Voice settings</h2>
+          <h2 className="text-base font-semibold text-gray-900">Settings</h2>
           <button
             onClick={onClose}
             className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition"
@@ -69,6 +91,31 @@ export default function Settings({ open, onClose }) {
         </div>
 
         <div className="space-y-5">
+          <div className="pb-5 border-b border-gray-100">
+            <label htmlFor="settings-jurisdiction" className="block text-sm font-medium text-gray-800 mb-1.5">
+              State or territory
+            </label>
+            <p className="text-xs text-gray-500 mb-2">Used to apply the correct DIY licensing policy. We do not infer your location or collect a precise address.</p>
+            <select
+              id="settings-jurisdiction"
+              aria-label="Australian state or territory"
+              value={selectedJurisdiction}
+              onChange={(event) => { setSelectedJurisdiction(event.target.value); setJurisdictionError('') }}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select state or territory</option>
+              {JURISDICTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+            {jurisdictionError && <p role="alert" className="text-xs text-red-600 mt-1">{jurisdictionError}</p>}
+            <button
+              type="button"
+              onClick={handleJurisdictionSave}
+              disabled={savingJurisdiction || selectedJurisdiction === jurisdiction}
+              className="mt-2 w-full px-3 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50"
+            >
+              {savingJurisdiction ? 'Saving…' : jurisdiction ? 'Change state or territory' : 'Save state or territory'}
+            </button>
+          </div>
           <Toggle
             label="Auto-read AI responses"
             description="Reads new assistant messages aloud"

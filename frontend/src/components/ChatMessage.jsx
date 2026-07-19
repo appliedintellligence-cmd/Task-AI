@@ -211,6 +211,32 @@ function RepairResult({ result, messageId }) {
       )}
 
       <div className="p-4 space-y-4">
+        {result.diy_assessment && (
+          <div className={`rounded-xl border p-3 ${result.diy_assessment.safety_level == null ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  DIY eligibility · {result.diy_assessment.jurisdiction || 'State required'}
+                </p>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  {result.diy_assessment.safety_level == null
+                    ? result.diy_assessment.assessment_status.replaceAll('_', ' ')
+                    : `Safety level ${result.diy_assessment.safety_level}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event('taskai-open-settings'))}
+                className="text-xs text-blue-700 underline"
+                aria-label="Change state or territory"
+              >
+                Change state
+              </button>
+            </div>
+            {result.requires_reassessment && <p className="text-xs text-amber-700 mt-2">State changed. Reassess this repair before using instructions.</p>}
+            {result.diy_assessment.reason && <p className="text-xs text-gray-600 mt-2">{result.diy_assessment.reason}</p>}
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">

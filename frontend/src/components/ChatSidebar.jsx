@@ -32,7 +32,7 @@ export default function ChatSidebar({
   async function fetchChats() {
     if (!user || !token) return
     try {
-      const data = await apiFetch(`${API}/chats/${user.id}`, {
+      const data = await apiFetch(`${API}/chats`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       setChats(data)

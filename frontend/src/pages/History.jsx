@@ -17,16 +17,16 @@ export default function History() {
         return
       }
       setUser(session.user)
-      fetchJobs(session.user.id, session.access_token)
+      fetchJobs(session.access_token)
     })
   }, [])
 
-  async function fetchJobs(userId, token) {
+  async function fetchJobs(token) {
     const apiUrl = import.meta.env.VITE_API_URL
     setLoading(true)
     setError(null)
     try {
-      const data = await apiFetch(`${apiUrl}/jobs/${userId}`, {
+      const data = await apiFetch(`${apiUrl}/jobs`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       setJobs(data)
@@ -43,7 +43,7 @@ export default function History() {
 
   function handleRetry() {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) fetchJobs(session.user.id, session.access_token)
+      if (session) fetchJobs(session.access_token)
       else navigate('/login', { replace: true })
     })
   }
@@ -110,6 +110,7 @@ export default function History() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 truncate">{job.problem}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Assessment: {job.result_json?.diy_assessment?.jurisdiction || 'Reassessment required'}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${SEVERITY_COLOURS[job.severity] || 'bg-gray-100 text-gray-600'}`}>
                       {job.severity}

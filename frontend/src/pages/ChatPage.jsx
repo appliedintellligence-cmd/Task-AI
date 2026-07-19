@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, signOut } from '../lib/supabase'
+import { getProfileJurisdiction, supabase, signOut, updateProfileJurisdiction } from '../lib/supabase'
 import { apiFetch, ApiError } from '../lib/api'
 import { useChat } from '../hooks/useChat'
 import { useSpeech } from '../hooks/useSpeech'
@@ -8,12 +8,14 @@ import ChatMessage from '../components/ChatMessage'
 import ChatInput from '../components/ChatInput'
 import ChatSidebar from '../components/ChatSidebar'
 import Settings from '../components/Settings'
+import { jurisdictionChangeRequiresReassessment } from '../lib/jurisdiction'
 
 const API = import.meta.env.VITE_API_URL
 
 export default function ChatPage() {
   const navigate = useNavigate()
-  const { messages, loading, sendMessage, retryLast, loadJob, loadChat, clearMessages, activeChatId } = useChat()
+  const [jurisdiction, setJurisdiction] = useState(null)
+  const { messages, loading, sendMessage, retryLast, loadJob, loadChat, clearMessages, requireReassessment, activeChatId } = useChat(jurisdiction)
   const { speak } = useSpeech()
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
@@ -29,14 +31,26 @@ export default function ChatPage() {
         setUser(session.user)
         setToken(session.access_token)
         fetchJobs(session.user.id, session.access_token)
+        getProfileJurisdiction(session.user.id).then(setJurisdiction).catch(() => setJurisdiction(null))
       }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null)
       setToken(session?.access_token ?? null)
-      if (session) fetchJobs(session.user.id, session.access_token)
+      if (session) {
+        fetchJobs(session.user.id, session.access_token)
+        getProfileJurisdiction(session.user.id).then(setJurisdiction).catch(() => setJurisdiction(null))
+      } else {
+        setJurisdiction(null)
+      }
     })
     return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    const openSettings = () => setSettingsOpen(true)
+    window.addEventListener('taskai-open-settings', openSettings)
+    return () => window.removeEventListener('taskai-open-settings', openSettings)
   }, [])
 
   useEffect(() => {
@@ -60,7 +74,7 @@ export default function ChatPage() {
 
   async function fetchJobs(userId, tok) {
     try {
-      const data = await apiFetch(`${API}/jobs/${userId}`, { headers: { Authorization: `Bearer ${tok}` } })
+      const data = await apiFetch(`${API}/jobs`, { headers: { Authorization: `Bearer ${tok}` } })
       setJobs(data)
     } catch (err) {
       if (err instanceof ApiError && err.isAuth) {
@@ -101,11 +115,21 @@ export default function ChatPage() {
 
   async function handleSend(text, imageFile) {
     setSidebarOpen(false)
+    if (!jurisdiction) {
+      setSettingsOpen(true)
+      return
+    }
     await sendMessage(text, imageFile)
     if (imageFile) {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) setTimeout(() => fetchJobs(session.user.id, session.access_token), 1500)
     }
+  }
+
+  async function handleJurisdictionChange(nextJurisdiction) {
+    if (user) await updateProfileJurisdiction(user.id, nextJurisdiction)
+    if (jurisdictionChangeRequiresReassessment(jurisdiction, nextJurisdiction)) requireReassessment()
+    setJurisdiction(nextJurisdiction)
   }
 
   return (
@@ -161,7 +185,12 @@ export default function ChatPage() {
         </div>
       </aside>
 
-      <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <Settings
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        jurisdiction={jurisdiction}
+        onJurisdictionChange={handleJurisdictionChange}
+      />
 
       {/* ── MAIN ── */}
       <div className="flex-1 flex flex-col min-w-0">

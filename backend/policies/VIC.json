@@ -1,11 +1,569 @@
 {
   "jurisdiction": "VIC",
-  "policy_version": "0.0.0-unverified",
-  "verified": false,
-  "regulator": "",
-  "source_url": "",
+  "policy_version": "2026.07.0-vic",
+  "verified": true,
+  "regulator": "Energy Safe Victoria; Victorian Building Authority (Building and Plumbing Commission); WorkSafe Victoria / Asbestos Victoria",
+  "source_url": "https://www.vic.gov.au/",
   "effective_date": null,
-  "last_reviewed_at": null,
-  "notes": "Placeholder unverified policy for Victoria (VIC). DIY legality rules have not yet been researched or verified. While unverified, all work resolves to legal_status 'unclear' and is never treated as permitted. Populate 'rules' and set verified=true only after confirming against the official state/territory regulator.",
-  "rules": []
+  "last_reviewed_at": "2026-07-18",
+  "notes": "Verified Victorian DIY policy. Each definite rule cites an official Victorian regulator. Rules are task-specific; no broad allowances. Where official guidance is ambiguous the rule is 'unclear', never 'permitted'. See docs/diy-policy/victoria-sources.md for the source review.",
+  "rules": [
+    {
+      "jurisdiction": "VIC",
+      "work_category": "electrical",
+      "task_classification": "fixed_electrical_work",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed electrician (Registered Electrical Contractor)",
+      "source_url": "https://www.energysafe.vic.gov.au/electrical-ddiy-dont-do-it-yourself",
+      "source_regulator": "Energy Safe Victoria",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "In Victoria all electrical installation work — including small jobs such as replacing power points and light switches — must be done by a licensed electrician. Unlicensed electrical work is illegal and dangerous.",
+      "safety_status": "unsuitable",
+      "confidence": 97,
+      "risk_categories": [
+        "electrical"
+      ],
+      "warning_signs": [
+        "Live electrical work can cause electrocution and fire"
+      ],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not carry out or attempt this electrical work yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "electrical",
+      "task_classification": "replace_power_point",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed electrician (Registered Electrical Contractor)",
+      "source_url": "https://www.energysafe.vic.gov.au/electrical-ddiy-dont-do-it-yourself",
+      "source_regulator": "Energy Safe Victoria",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "In Victoria all electrical installation work — including small jobs such as replacing power points and light switches — must be done by a licensed electrician. Unlicensed electrical work is illegal and dangerous.",
+      "safety_status": "unsuitable",
+      "confidence": 97,
+      "risk_categories": [
+        "electrical"
+      ],
+      "warning_signs": [
+        "Live electrical work can cause electrocution and fire"
+      ],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not carry out or attempt this electrical work yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "electrical",
+      "task_classification": "replace_light_switch",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed electrician (Registered Electrical Contractor)",
+      "source_url": "https://www.energysafe.vic.gov.au/electrical-ddiy-dont-do-it-yourself",
+      "source_regulator": "Energy Safe Victoria",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "In Victoria all electrical installation work — including small jobs such as replacing power points and light switches — must be done by a licensed electrician. Unlicensed electrical work is illegal and dangerous.",
+      "safety_status": "unsuitable",
+      "confidence": 97,
+      "risk_categories": [
+        "electrical"
+      ],
+      "warning_signs": [
+        "Live electrical work can cause electrocution and fire"
+      ],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not carry out or attempt this electrical work yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "electrical",
+      "task_classification": "connect_fixed_appliance",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed electrician (Registered Electrical Contractor)",
+      "source_url": "https://www.energysafe.vic.gov.au/electrical-ddiy-dont-do-it-yourself",
+      "source_regulator": "Energy Safe Victoria",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "In Victoria all electrical installation work — including small jobs such as replacing power points and light switches — must be done by a licensed electrician. Unlicensed electrical work is illegal and dangerous.",
+      "safety_status": "unsuitable",
+      "confidence": 97,
+      "risk_categories": [
+        "electrical"
+      ],
+      "warning_signs": [
+        "Live electrical work can cause electrocution and fire"
+      ],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not carry out or attempt this electrical work yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "electrical",
+      "task_classification": "repair_exposed_wiring",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed electrician (Registered Electrical Contractor)",
+      "source_url": "https://www.energysafe.vic.gov.au/electrical-ddiy-dont-do-it-yourself",
+      "source_regulator": "Energy Safe Victoria",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "Exposed or damaged wiring is electrical installation work and a live hazard. It must be isolated and repaired by a licensed electrician; do not touch it.",
+      "safety_status": "unsuitable",
+      "confidence": 97,
+      "risk_categories": [
+        "electrical"
+      ],
+      "warning_signs": [
+        "Exposed wiring may be live and can be lethal — do not touch and keep clear"
+      ],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not touch, tape over, or attempt to repair exposed wiring yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "gasfitting",
+      "task_classification": "connect_gas_appliance",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed gasfitter",
+      "source_url": "https://www.energysafe.vic.gov.au/community-safety/working-tradespeople/gasfitters",
+      "source_regulator": "Energy Safe Victoria",
+      "effective_date": "2026-05-31",
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "Gas fitting and gas-appliance connection/disconnection in Victoria must always be done by a licensed gasfitter. Unlicensed gas work is illegal and can be fatal.",
+      "safety_status": "unsuitable",
+      "confidence": 97,
+      "risk_categories": [
+        "gas"
+      ],
+      "warning_signs": [
+        "Gas work carries fire, explosion and carbon monoxide risks"
+      ],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not connect, disconnect, or work on gas lines or gas appliances yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "gasfitting",
+      "task_classification": "gas_pipework",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed gasfitter",
+      "source_url": "https://www.energysafe.vic.gov.au/community-safety/working-tradespeople/gasfitters",
+      "source_regulator": "Energy Safe Victoria",
+      "effective_date": "2026-05-31",
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "Gas fitting and gas-appliance connection/disconnection in Victoria must always be done by a licensed gasfitter. Unlicensed gas work is illegal and can be fatal.",
+      "safety_status": "unsuitable",
+      "confidence": 97,
+      "risk_categories": [
+        "gas"
+      ],
+      "warning_signs": [
+        "Gas work carries fire, explosion and carbon monoxide risks"
+      ],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not connect, disconnect, or work on gas lines or gas appliances yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "plumbing_water_supply",
+      "task_classification": "water_supply_work",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed plumber",
+      "source_url": "https://www.vba.vic.gov.au/registration-and-licensing/plumbing-registration-and-licensing",
+      "source_regulator": "Victorian Building Authority (Building and Plumbing Commission)",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "This is regulated plumbing work under the Plumbing Regulations 2018 and must be carried out by a licensed or registered plumber. Work valued over $750 also requires a plumbing compliance certificate.",
+      "safety_status": "unsuitable",
+      "confidence": 95,
+      "risk_categories": [
+        "plumbing"
+      ],
+      "warning_signs": [],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not carry out water-supply plumbing work yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "plumbing_sanitary",
+      "task_classification": "sanitary_work",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed plumber",
+      "source_url": "https://www.vba.vic.gov.au/registration-and-licensing/plumbing-registration-and-licensing",
+      "source_regulator": "Victorian Building Authority (Building and Plumbing Commission)",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "This is regulated plumbing work under the Plumbing Regulations 2018 and must be carried out by a licensed or registered plumber. Work valued over $750 also requires a plumbing compliance certificate.",
+      "safety_status": "unsuitable",
+      "confidence": 95,
+      "risk_categories": [
+        "plumbing"
+      ],
+      "warning_signs": [],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not carry out sanitary plumbing work yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "plumbing_drainage",
+      "task_classification": "sewerage_drainage_work",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed plumber",
+      "source_url": "https://www.vba.vic.gov.au/registration-and-licensing/plumbing-registration-and-licensing/drainage",
+      "source_regulator": "Victorian Building Authority (Building and Plumbing Commission)",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "This is regulated plumbing work under the Plumbing Regulations 2018 and must be carried out by a licensed or registered plumber. Work valued over $750 also requires a plumbing compliance certificate.",
+      "safety_status": "unsuitable",
+      "confidence": 95,
+      "risk_categories": [
+        "plumbing"
+      ],
+      "warning_signs": [],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not carry out sewerage or below-ground drainage work yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "plumbing_roofing_stormwater",
+      "task_classification": "roof_plumbing_stormwater_work",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed plumber",
+      "source_url": "https://www.vba.vic.gov.au/registration-and-licensing/plumbing-registration-and-licensing/roofing-stormwater",
+      "source_regulator": "Victorian Building Authority (Building and Plumbing Commission)",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "This is regulated plumbing work under the Plumbing Regulations 2018 and must be carried out by a licensed or registered plumber. Work valued over $750 also requires a plumbing compliance certificate.",
+      "safety_status": "unsuitable",
+      "confidence": 95,
+      "risk_categories": [
+        "plumbing",
+        "work_at_height"
+      ],
+      "warning_signs": [
+        "Roof plumbing also involves working at height"
+      ],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not carry out roof plumbing or stormwater work yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "plumbing_backflow",
+      "task_classification": "backflow_prevention_work",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed plumber endorsed in backflow prevention",
+      "source_url": "https://www.vba.vic.gov.au/registration-and-licensing/plumbing-registration-and-licensing/backflow-prevention",
+      "source_regulator": "Victorian Building Authority (Building and Plumbing Commission)",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "Backflow prevention work must be done by a licensed plumber holding the backflow prevention endorsement; testing must be recorded and lodged.",
+      "safety_status": "unsuitable",
+      "confidence": 95,
+      "risk_categories": [
+        "plumbing",
+        "water_contamination"
+      ],
+      "warning_signs": [],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not install, test, or work on backflow prevention devices yourself"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "plumbing",
+      "task_classification": "minor_water_maintenance",
+      "legal_status": "unclear",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": null,
+      "source_url": "https://www.vba.vic.gov.au/consumers/home-renovation-essentials/engaging-plumber",
+      "source_regulator": "Victorian Building Authority (Building and Plumbing Commission)",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "Most plumbing work in Victoria must be done by a licensed plumber. Whether a specific minor maintenance task (for example replacing a tap washer) is exempt is not clearly defined, so this is treated as unclear — confirm with the VBA before proceeding.",
+      "safety_status": "insufficient_information",
+      "confidence": 20,
+      "risk_categories": [
+        "plumbing"
+      ],
+      "warning_signs": [],
+      "questions_required": [
+        "Exactly what is the task (e.g. replace a tap washer, or replace/move a fixture)?",
+        "Does the work involve any pipe, drain, or fixture connection or disconnection?"
+      ],
+      "allowed_actions": [],
+      "prohibited_actions": []
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "structural",
+      "task_classification": "structural_building_work",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Registered building practitioner (building permit and registered building surveyor required)",
+      "source_url": "https://www.bpc.vic.gov.au/resource-hub/practice-notes/bp-01-when-is-a-building-permit-required",
+      "source_regulator": "Victorian Building Authority (Building and Plumbing Commission)",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "Structural building work (including altering or removing load-bearing elements) requires a building permit and must be carried out by a registered building practitioner; a registered building surveyor issues the permit.",
+      "safety_status": "unsuitable",
+      "confidence": 93,
+      "risk_categories": [
+        "structural"
+      ],
+      "warning_signs": [],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": [
+        "Do not alter or remove load-bearing or structural elements without a permit"
+      ]
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "structural",
+      "task_classification": "repair_structural_crack",
+      "legal_status": "licensed_trade_required",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Registered building practitioner (building permit and registered building surveyor required)",
+      "source_url": "https://www.bpc.vic.gov.au/resource-hub/practice-notes/bp-01-when-is-a-building-permit-required",
+      "source_regulator": "Victorian Building Authority (Building and Plumbing Commission)",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "Cracking that indicates structural movement is structural building work. It must be assessed by a registered building practitioner (and may need a structural engineer); repairs may require a building permit.",
+      "safety_status": "caution",
+      "confidence": 80,
+      "risk_categories": [
+        "structural"
+      ],
+      "warning_signs": [
+        "Wide, diagonal, recurring cracks or sticking doors/windows can indicate footing or structural movement"
+      ],
+      "questions_required": [
+        "Is the crack wider than 3mm, diagonal, or growing over time?",
+        "Are doors or windows sticking, or is there any floor movement?"
+      ],
+      "allowed_actions": [],
+      "prohibited_actions": []
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "hazardous_material",
+      "task_classification": "suspected_asbestos",
+      "legal_status": "unclear",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": "Licensed asbestos removalist (WorkSafe Victoria)",
+      "source_url": "https://www.asbestos.vic.gov.au/in-the-home/find-manage-remove-dispose/homeowner-removal",
+      "source_regulator": "WorkSafe Victoria / Asbestos Victoria",
+      "effective_date": "2024-06-11",
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "Material suspected to contain asbestos must be identified before any work. Asbestos removal is best performed by a WorkSafe-licensed removalist; friable asbestos and larger non-friable quantities must be. Because the material is only suspected, this is treated as unclear pending identification.",
+      "safety_status": "caution",
+      "confidence": 15,
+      "risk_categories": [
+        "asbestos",
+        "hazardous_material"
+      ],
+      "warning_signs": [
+        "Disturbing asbestos can release lethal fibres — do not cut, drill, sand or break it"
+      ],
+      "questions_required": [
+        "Has the material been tested and confirmed as asbestos?",
+        "Is it friable or non-friable (bonded)?",
+        "Was the building built or last renovated before 1990?"
+      ],
+      "allowed_actions": [],
+      "prohibited_actions": []
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "cosmetic_finishes",
+      "task_classification": "painting",
+      "legal_status": "permitted",
+      "conditions": [
+        "Cosmetic repainting of existing, sound surfaces only"
+      ],
+      "exclusions": [
+        "Does not cover any electrical, plumbing, gas or structural work",
+        "Does not cover disturbing surfaces that may contain asbestos or lead paint"
+      ],
+      "required_professional_type": null,
+      "source_url": "https://www.bpc.vic.gov.au/resource-hub/practice-notes/bp-01-when-is-a-building-permit-required",
+      "source_regulator": "Victorian Building Authority (Building and Plumbing Commission)",
+      "effective_date": "2023-12-20",
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "Repainting existing surfaces is maintenance that does not require a building permit and is not a licensed trade in Victoria.",
+      "safety_status": "suitable",
+      "confidence": 90,
+      "risk_categories": [],
+      "warning_signs": [],
+      "questions_required": [],
+      "allowed_actions": [
+        "Repaint existing walls, ceilings, trim and doors"
+      ],
+      "prohibited_actions": []
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "cosmetic_finishes",
+      "task_classification": "cosmetic_plaster_repair",
+      "legal_status": "permitted",
+      "conditions": [
+        "Non-structural cosmetic patching of small cracks or holes only"
+      ],
+      "exclusions": [
+        "Excludes cracks indicating structural movement (wide, diagonal, recurring, or with sticking doors/windows)",
+        "Excludes any sheet/wall that may contain asbestos (pre-1990 construction)"
+      ],
+      "required_professional_type": null,
+      "source_url": "https://www.bpc.vic.gov.au/resource-hub/practice-notes/bp-01-when-is-a-building-permit-required",
+      "source_regulator": "Victorian Building Authority (Building and Plumbing Commission)",
+      "effective_date": "2023-12-20",
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "Minor, non-structural plaster patching (small cracks or holes) is maintenance and does not require a building permit or licence. If the cracking may be structural it must instead be assessed by a building practitioner.",
+      "safety_status": "caution",
+      "confidence": 70,
+      "risk_categories": [],
+      "warning_signs": [
+        "A wide, diagonal or recurring crack may indicate structural movement — treat as structural work, not cosmetic"
+      ],
+      "questions_required": [],
+      "allowed_actions": [
+        "Fill and sand small non-structural cracks and holes, then repaint"
+      ],
+      "prohibited_actions": []
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "unknown",
+      "task_classification": "unknown_material",
+      "legal_status": "unclear",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": null,
+      "source_url": "https://www.asbestos.vic.gov.au/about-asbestos/finding-and-identifying/find-and-identify-asbestos-tool/find-and-identify-asbestos-in-the-home/dealing-with-asbestos-in-your-home",
+      "source_regulator": "WorkSafe Victoria / Asbestos Victoria",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "The surface material and work type could not be identified. More information is required before any DIY assessment; in older buildings, unidentified sheet material may contain asbestos.",
+      "safety_status": "insufficient_information",
+      "confidence": 10,
+      "risk_categories": [
+        "unknown_material"
+      ],
+      "warning_signs": [],
+      "questions_required": [
+        "What is the surface material?",
+        "How old is the building — could the material contain asbestos (pre-1990)?",
+        "What exactly needs to be done?"
+      ],
+      "allowed_actions": [],
+      "prohibited_actions": []
+    },
+    {
+      "jurisdiction": "VIC",
+      "work_category": "work_at_height",
+      "task_classification": "elevated_work",
+      "legal_status": "unclear",
+      "conditions": [],
+      "exclusions": [],
+      "required_professional_type": null,
+      "source_url": "https://www.worksafe.vic.gov.au/prevent-falls",
+      "source_regulator": "WorkSafe Victoria / Asbestos Victoria",
+      "effective_date": null,
+      "last_reviewed_at": "2026-07-18",
+      "policy_version": "2026.07.0-vic",
+      "reason": "Working at height is a safety risk rather than a licensing question for a homeowner. WorkSafe Victoria duties apply where others are engaged. Use proper fall-prevention and consider engaging a professional for roof-level work.",
+      "safety_status": "caution",
+      "confidence": 20,
+      "risk_categories": [
+        "work_at_height"
+      ],
+      "warning_signs": [
+        "Falls from height are a leading cause of serious injury"
+      ],
+      "questions_required": [],
+      "allowed_actions": [],
+      "prohibited_actions": []
+    }
+  ]
 }

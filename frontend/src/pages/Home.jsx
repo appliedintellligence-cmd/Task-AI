@@ -26,7 +26,7 @@ export default function Home() {
   async function fetchRecentJobs(userId, token) {
     const apiUrl = import.meta.env.VITE_API_URL
     try {
-      const data = await apiFetch(`${apiUrl}/jobs/${userId}`, {
+      const data = await apiFetch(`${apiUrl}/jobs`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       setRecentJobs(data.slice(0, 5))

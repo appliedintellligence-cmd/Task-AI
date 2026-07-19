@@ -10,7 +10,22 @@ Product approval/registration is a fourth, independent decision handled on the
 material/product records, not encoded here.
 """
 
-from enum import Enum
+from enum import Enum, IntEnum
+
+
+class SafetyLevel(IntEnum):
+    safe_diy = 1
+    caution = 2
+    professional_required = 3
+    emergency = 4
+
+
+class AssessmentStatus(str, Enum):
+    complete = "complete"
+    assessment_pending = "assessment_pending"
+    more_information_required = "more_information_required"
+    jurisdiction_required = "jurisdiction_required"
+    policy_unverified = "policy_unverified"
 
 
 class Jurisdiction(str, Enum):

@@ -6,11 +6,11 @@ def embed_text(text: str) -> None:
     return None
 
 
-def search_similar(embedding, threshold: float = 0.6, limit: int = 5) -> list[dict]:
+def search_similar(user_id: str, embedding, threshold: float = 0.6, limit: int = 5) -> list[dict]:
     if embedding is None:
         return []
     from services.supabase import call_match_messages_rpc
-    return call_match_messages_rpc(embedding, match_threshold=threshold, match_count=limit)
+    return call_match_messages_rpc(user_id, embedding, match_threshold=threshold, match_count=limit)
 
 
 def build_context(similar_results: list[dict]) -> str:

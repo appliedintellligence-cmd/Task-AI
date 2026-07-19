@@ -6,8 +6,10 @@ responses are unchanged and remain backward-compatible.
 """
 
 from .enums import (
+    AssessmentStatus,
     Jurisdiction,
     LegalStatus,
+    SafetyLevel,
     SafetyStatus,
     OverallStatus,
 )
@@ -15,8 +17,10 @@ from .diy_assessment import DiyAssessment, PolicySource, VALIDATION_VERSION
 from .policy import PolicyRule, JurisdictionPolicy
 
 __all__ = [
+    "AssessmentStatus",
     "Jurisdiction",
     "LegalStatus",
+    "SafetyLevel",
     "SafetyStatus",
     "OverallStatus",
     "DiyAssessment",

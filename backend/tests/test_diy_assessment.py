@@ -10,6 +10,9 @@ ALL_CODES = [j.value for j in Jurisdiction]
 
 # The three independent decisions plus supporting context.
 EXPECTED_KEYS = {
+    "safety_level",
+    "assessment_status",
+    "assessed_at",
     "jurisdiction",
     "legal_status",
     "safety_status",
@@ -49,7 +52,7 @@ def test_assessment_defaults():
         safety_status=SafetyStatus.insufficient_information,
         overall_status=OverallStatus.more_information,
     )
-    assert a.validation_version == VALIDATION_VERSION == "1.0"
+    assert a.validation_version == VALIDATION_VERSION == "2.0"
     assert a.confidence == 0
     assert a.professional_type is None
     assert a.regulated_work_categories == []
@@ -85,7 +88,7 @@ def test_assessment_json_serialisable():
     payload = a.model_dump(mode="json")
     assert payload["jurisdiction"] == "VIC"
     assert payload["legal_status"] == "unclear"
-    assert payload["validation_version"] == "1.0"
+    assert payload["validation_version"] == "2.0"
 
 
 def test_assessment_rejects_invalid_enum():

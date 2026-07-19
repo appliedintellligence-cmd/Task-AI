@@ -7,15 +7,15 @@ response field.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from .enums import Jurisdiction, LegalStatus, OverallStatus, SafetyStatus
+from .enums import AssessmentStatus, Jurisdiction, LegalStatus, OverallStatus, SafetyLevel, SafetyStatus
 
 # Bumped when the assessment shape or semantics change.
-VALIDATION_VERSION = "1.0"
+VALIDATION_VERSION = "2.0"
 
 
 class PolicySource(BaseModel):
@@ -34,7 +34,9 @@ class DiyAssessment(BaseModel):
     fields on purpose — legality, situational suitability and the combined
     verdict are distinct decisions.
     """
-    jurisdiction: Jurisdiction
+    jurisdiction: Optional[Jurisdiction] = None
+    safety_level: Optional[SafetyLevel] = None
+    assessment_status: AssessmentStatus = AssessmentStatus.assessment_pending
     legal_status: LegalStatus
     safety_status: SafetyStatus
     overall_status: OverallStatus
@@ -49,3 +51,4 @@ class DiyAssessment(BaseModel):
     confidence: int = 0
     policy_source: PolicySource = Field(default_factory=PolicySource)
     validation_version: str = VALIDATION_VERSION
+    assessed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

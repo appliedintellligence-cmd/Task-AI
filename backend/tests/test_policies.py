@@ -15,6 +15,10 @@ from services.policy_store import (
 ALL_CODES = [j.value for j in Jurisdiction]
 EXPECTED_CODES = {"ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"}
 
+# VIC has been researched and verified; the rest remain placeholders for now.
+VERIFIED_CODES = {"VIC"}
+UNVERIFIED_CODES = sorted(EXPECTED_CODES - VERIFIED_CODES)
+
 
 def test_all_eight_jurisdictions_covered():
     assert set(ALL_CODES) == EXPECTED_CODES
@@ -34,13 +38,19 @@ def test_policy_loads_and_validates(code):
     assert policy.policy_version, "policy_version must be non-empty"
 
 
-@pytest.mark.parametrize("code", ALL_CODES)
-def test_policies_currently_unverified_placeholders(code):
+@pytest.mark.parametrize("code", UNVERIFIED_CODES)
+def test_unresearched_jurisdictions_are_placeholders(code):
     policy = load_policy(code)
-    # Data-foundation phase: nothing has been researched yet.
     assert policy.verified is False
     assert policy.is_placeholder() is True
     assert policy.rules == []
+
+
+def test_vic_is_verified_and_populated():
+    policy = load_policy("VIC")
+    assert policy.verified is True
+    assert policy.is_placeholder() is False
+    assert len(policy.rules) > 0
 
 
 @pytest.mark.parametrize("code", ALL_CODES)
@@ -106,7 +116,10 @@ def test_schema_rejects_invalid_enum_values():
 
 
 def test_verified_policy_may_contain_permitted_rule():
-    """The 'no permitted' guard applies only to unverified policies."""
+    """The 'no permitted' guard applies only to unverified policies.
+
+    A verified permitted rule is allowed, but must cite a source.
+    """
     policy = JurisdictionPolicy(
         jurisdiction=Jurisdiction.VIC,
         policy_version="test",
@@ -114,12 +127,33 @@ def test_verified_policy_may_contain_permitted_rule():
         rules=[
             PolicyRule(
                 jurisdiction=Jurisdiction.VIC,
-                work_category="painting",
+                work_category="cosmetic_finishes",
                 task_classification="paint_interior_wall",
                 legal_status=LegalStatus.permitted,
+                source_url="https://www.example.vic.gov.au/",
+                source_regulator="Test regulator",
                 policy_version="test",
             )
         ],
     )
     assert policy.verified is True
     assert policy.is_placeholder() is False
+
+
+def test_verified_definite_rule_requires_source():
+    """A verified permitted/licensed rule without a source must fail validation."""
+    with pytest.raises(ValidationError):
+        JurisdictionPolicy(
+            jurisdiction=Jurisdiction.VIC,
+            policy_version="test",
+            verified=True,
+            rules=[
+                PolicyRule(
+                    jurisdiction=Jurisdiction.VIC,
+                    work_category="electrical",
+                    task_classification="replace_power_point",
+                    legal_status=LegalStatus.licensed_trade_required,
+                    policy_version="test",  # no source_url / source_regulator
+                )
+            ],
+        )
