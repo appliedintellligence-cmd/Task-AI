@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node --test src/lib/jurisdiction.test.js",
+    "test": "node --test src/lib/*.test.js",
+    "lint": "npm run test",
     "preview": "vite preview"
   },
   "dependencies": {
