@@ -10,17 +10,26 @@ import { useAuth } from '@/context/AuthContext';
 import RepairCard from '@/components/RepairCard';
 
 type State = 'idle' | 'picked' | 'analysing' | 'result' | 'error';
+const ANALYSIS_STAGES = ['Checking image quality', 'Identifying the affected area', 'Assessing hazards', 'Checking DIY eligibility', 'Preparing the result'];
 
 export default function AnalyseScreen() {
   const { user, token, jurisdiction } = useAuth();
   const router = useRouter();
   const previousJurisdiction = useRef(jurisdiction);
+  const submitting = useRef(false);
   const [state, setState] = useState<State>('idle');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [result, setResult] = useState<AnalyseResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [analysisStage, setAnalysisStage] = useState(0);
+
+  useEffect(() => {
+    if (state !== 'analysing') return;
+    const timer = setInterval(() => setAnalysisStage((value) => Math.min(value + 1, ANALYSIS_STAGES.length - 1)), 1100);
+    return () => clearInterval(timer);
+  }, [state]);
 
   useEffect(() => {
     if (previousJurisdiction.current && jurisdiction && previousJurisdiction.current !== jurisdiction && result) {
@@ -52,6 +61,11 @@ export default function AnalyseScreen() {
     });
 
     if (!res.canceled && res.assets[0]) {
+      const asset = res.assets[0];
+      if (asset.fileSize && asset.fileSize > 12 * 1024 * 1024) {
+        Alert.alert('Photo too large', 'Choose a photo smaller than 12 MB.');
+        return;
+      }
       setImageUri(res.assets[0].uri);
       setResult(null);
       setSaved(false);
@@ -60,7 +74,7 @@ export default function AnalyseScreen() {
   }
 
   async function handleAnalyse() {
-    if (!imageUri) return;
+    if (!imageUri || submitting.current) return;
     if (!jurisdiction) {
       Alert.alert(
         'State or territory required',
@@ -69,6 +83,8 @@ export default function AnalyseScreen() {
       );
       return;
     }
+    submitting.current = true;
+    setAnalysisStage(0);
     setState('analysing');
     try {
       const r = await analyseImage(imageUri, 'repair.jpg', jurisdiction);
@@ -77,6 +93,8 @@ export default function AnalyseScreen() {
     } catch (e: any) {
       setErrorMsg(e.message || 'Analysis failed. Try a clearer photo.');
       setState('error');
+    } finally {
+      submitting.current = false;
     }
   }
 
@@ -122,9 +140,9 @@ export default function AnalyseScreen() {
       {state === 'idle' && (
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>🔧</Text>
-          <Text style={styles.emptyTitle}>Analyse a Home Repair</Text>
+          <Text style={styles.emptyTitle}>Not sure how to fix it? Take a photo.</Text>
           <Text style={styles.emptySubtitle}>
-            Take or upload a photo and get an instant AI-powered repair plan
+            We’ll assess visible hazards and check DIY eligibility for {jurisdiction || 'your jurisdiction'}.
           </Text>
           <TouchableOpacity style={styles.primaryBtn} onPress={() => pickImage(true)}>
             <Text style={styles.primaryBtnText}>📷  Take Photo</Text>
@@ -153,8 +171,8 @@ export default function AnalyseScreen() {
       {state === 'analysing' && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#F97316" />
-          <Text style={styles.loadingTitle}>Analysing repair…</Text>
-          <Text style={styles.loadingSubtitle}>Running OpenCV + AI vision pipeline</Text>
+          <Text accessibilityLiveRegion="polite" style={styles.loadingTitle}>{ANALYSIS_STAGES[analysisStage]}…</Text>
+          {ANALYSIS_STAGES.map((item, index) => <Text key={item} style={styles.loadingSubtitle}>{index < analysisStage ? '✓' : index === analysisStage ? '●' : '○'} {item}</Text>)}
         </View>
       )}
 

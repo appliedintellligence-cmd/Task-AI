@@ -25,8 +25,8 @@ Starting commit: `1477828`
 
 | Phase | Status | Commit | Notes |
 |---|---|---|---|
-| 8 — Responsive application shell | BLOCKED / NOT STARTED | — | Stopped by the Steps 1–7 prerequisite gate. |
-| 9 — Camera-first dashboard | NOT STARTED | — | Depends on Phase 8. |
+| 8 — Responsive application shell | COMPLETE | `868131d` | Responsive web product navigation and mobile five-tab shell with central Scan action. |
+| 9 — Camera-first dashboard | IN PROGRESS | — | Phase 8 gate passed. |
 | 10 — DIY eligibility interface | NOT STARTED | — | Depends on Phase 9. |
 | 11 — Diagnosis-result redesign | NOT STARTED | — | Depends on Phase 10. |
 | 12 — Guided repair mode | NOT STARTED | — | Depends on Phase 11. |
@@ -43,3 +43,13 @@ Starting commit: `1477828`
 - **Equivalent-pattern review:** The affected service-role queries were inspected. `/analyse` and `/inpaint` do not accept private record identifiers or load stored private records, so they are not equivalent IDOR instances and were not expanded into this remediation.
 - **Verification:** Backend 142 passed (including 10 authorisation cases); frontend 5 passed; web production build passed; mobile TypeScript passed. The mobile package has no test script.
 - **Next:** Resume the autonomous redesign loop at Phase 8 after the remediation commit.
+
+## Phase 8 — Responsive application shell
+
+- **Status:** COMPLETE.
+- **Files changed:** Web route shell, product navigation, responsive/reduced-motion styles, Settings/list destinations, mobile five-tab navigation and supporting Home/Repairs/Lists/Profile screens.
+- **Tests run:** `npm run lint`, `npm test`, `npm run build`, `npx tsc --noEmit`, navigation smoke tests.
+- **Results:** 7 web tests passed; web production build passed with the existing chunk-size advisory; mobile TypeScript passed after one focused tab-button typing repair.
+- **Commit hash:** `868131d`.
+- **Known limitations:** Browser/device screenshot automation is not configured; responsive constraints were reviewed structurally at the required breakpoints. Existing Vite plugin deprecation and bundle-size advisories remain.
+- **Next phase:** Phase 9 — Camera-first dashboard.
