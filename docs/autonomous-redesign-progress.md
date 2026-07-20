@@ -31,7 +31,7 @@ Starting commit: `1477828`
 | 11 — Diagnosis-result redesign | COMPLETE | `6678002` | Safety-first result order, responsive materials, gated illustrative preview and technical details. |
 | 12 — Guided repair mode | COMPLETE | `77cb36c` | Backend-verified entry, resumable steps, change escalation and completion feedback. |
 | 13 — Public landing page | COMPLETE | `b669683` | Public Australian landing page with protected product routes and careful safety claims. |
-| 14 — Final QA | COMPLETE | Pending commit | Full available regression gate, CORS hardening, secret/log review and QA report. |
+| 14 — Final QA | COMPLETE | `c4e497f` | Full available regression gate, CORS hardening, secret/log review and QA report. |
 
 ## Pre-Phase 8 authorisation remediation
 
@@ -110,6 +110,6 @@ Starting commit: `1477828`
 - **Files changed:** Explicit backend CORS allowlist and tests, safe storage-error logging, environment/deployment documentation, final QA report.
 - **Tests run:** Backend 145 tests; web lint, 38 tests and production build; mobile TypeScript; conflict, whitespace, secret, service-role and unsafe-log scans.
 - **Results:** All automated gates passed. No credentials or frontend/mobile service-role key found.
-- **Commit hash:** Pending.
+- **Commit hash:** `c4e497f`.
 - **Known limitations:** Recommendation is READY WITH CONDITIONS because public image-bucket URLs require an explicitly planned privacy migration before sensitive production use; device/browser/screen-reader QA remains manual.
 - **Next phase:** None — deployment remains a manual, unauthorised action.
