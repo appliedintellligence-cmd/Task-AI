@@ -29,8 +29,8 @@ Starting commit: `1477828`
 | 9 — Camera-first dashboard | COMPLETE | `b0303f1` | Camera/gallery/drop workflow with validation, progress, retry and jurisdiction gate. |
 | 10 — DIY eligibility interface | COMPLETE | `df62952` | Four authoritative levels, unresolved locks and versioned Level 2 acknowledgement. |
 | 11 — Diagnosis-result redesign | COMPLETE | `6678002` | Safety-first result order, responsive materials, gated illustrative preview and technical details. |
-| 12 — Guided repair mode | COMPLETE | Pending commit | Backend-verified entry, resumable steps, change escalation and completion feedback. |
-| 13 — Public landing page | NOT STARTED | — | Depends on Phase 12. |
+| 12 — Guided repair mode | COMPLETE | `77cb36c` | Backend-verified entry, resumable steps, change escalation and completion feedback. |
+| 13 — Public landing page | COMPLETE | Pending commit | Public Australian landing page with protected product routes and careful safety claims. |
 | 14 — Final QA | NOT STARTED | — | Depends on Phases 8–13. |
 
 ## Pre-Phase 8 authorisation remediation
@@ -90,6 +90,16 @@ Starting commit: `1477828`
 - **Files changed:** Authenticated backend assessment re-verification endpoint, web/mobile guided routes, entry/resume/escalation/completion logic and tests, result entry actions.
 - **Tests run:** Backend 143 tests, 37 web tests plus lint/build, mobile TypeScript.
 - **Results:** All passed.
-- **Commit hash:** Pending.
+- **Commit hash:** `77cb36c`.
 - **Known limitations:** Progress is device-local and versioned; cross-device synchronisation would require a planned persistence schema and migration.
 - **Next phase:** Phase 13 — Public landing page.
+
+## Phase 13 — Public landing page
+
+- **Status:** COMPLETE — pending phase commit.
+- **Files changed:** Public landing route/page, public/protected route policy tests, SEO title/description and theme metadata.
+- **Tests run:** Web lint, 38 web tests, web production build.
+- **Results:** All passed; existing plugin and chunk-size advisories remain.
+- **Commit hash:** Pending.
+- **Known limitations:** Illustrative before/after uses lightweight CSS artwork rather than implying a real diagnostic outcome.
+- **Next phase:** Phase 14 — Final QA.

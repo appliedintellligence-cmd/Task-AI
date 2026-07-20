@@ -9,12 +9,14 @@ import ProductShell from './components/ProductShell'
 import ShoppingLists from './pages/ShoppingLists'
 import SettingsPage from './pages/SettingsPage'
 import GuidedRepair from './pages/GuidedRepair'
+import Landing from './pages/Landing'
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Landing />} />
         <Route element={<AuthGuard><ProductShell /></AuthGuard>}>
           <Route path="/app" element={<Home />} />
           <Route path="/diagnose" element={<ChatPage />} />
@@ -24,9 +26,8 @@ export default function App() {
           <Route path="/results" element={<Results />} />
           <Route path="/guided" element={<GuidedRepair />} />
         </Route>
-        <Route path="/" element={<Navigate to="/app" replace />} />
         <Route path="/history" element={<Navigate to="/repairs" replace />} />
-        <Route path="*" element={<Navigate to="/app" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )
