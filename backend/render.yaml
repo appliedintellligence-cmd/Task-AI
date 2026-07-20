@@ -17,3 +17,5 @@ services:
         sync: false
       - key: REPLICATE_API_TOKEN
         sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false

@@ -59,8 +59,8 @@ async def analyse(
     try:
         filename = file.filename or "upload.jpg"
         image_url = await upload_image(upload_bytes, filename)
-    except Exception as e:
-        print(f"Storage upload failed (non-fatal): {e}")
+    except Exception:
+        logger.warning("Storage upload failed (non-fatal)")
 
     # ════════════════════════════════════════════════
     # STAGE 2-4 — Groq Maverick vision → Nemotron repair plan

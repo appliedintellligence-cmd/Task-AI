@@ -16,7 +16,7 @@ Starting commit: `1477828`
   - `git diff --check`
   - `git ls-files -u`
 - **Results:** Backend 132 passed; frontend 5 passed; frontend production build passed with existing deprecation/chunk-size warnings; mobile TypeScript passed; no whitespace errors; no unresolved Git conflicts.
-- **Commit hash:** Pending prerequisite remediation commit.
+- **Commit hash:** `85165b4`.
 - **Blocker:** The backend Supabase client uses `SUPABASE_SERVICE_KEY`, so route queries bypass user RLS. `GET /chats/{chat_id}/messages` and `DELETE /chats/{chat_id}` authenticate a bearer token but do not verify that the chat belongs to that user. `POST /chat` accepts a caller-provided `chat_id` and reads/writes it without an ownership check, including when no authenticated user was established. Similar-job lookup authenticates the caller but does not verify ownership of the source job; `find_similar_jobs` is `SECURITY DEFINER` and intentionally returns cross-user job data. No authorization tests cover these boundaries.
 - **Known limitations:** Existing Steps 1–7 changes are uncommitted and were preserved. The migrations under `db/migrations/` are additive and have not been applied remotely. The repository has no configured web lint command, component/navigation test framework, or mobile test command yet.
 - **Next phase:** Phase 8 remains pending until the verified prerequisite work is committed.
@@ -30,8 +30,8 @@ Starting commit: `1477828`
 | 10 — DIY eligibility interface | COMPLETE | `df62952` | Four authoritative levels, unresolved locks and versioned Level 2 acknowledgement. |
 | 11 — Diagnosis-result redesign | COMPLETE | `6678002` | Safety-first result order, responsive materials, gated illustrative preview and technical details. |
 | 12 — Guided repair mode | COMPLETE | `77cb36c` | Backend-verified entry, resumable steps, change escalation and completion feedback. |
-| 13 — Public landing page | COMPLETE | Pending commit | Public Australian landing page with protected product routes and careful safety claims. |
-| 14 — Final QA | NOT STARTED | — | Depends on Phases 8–13. |
+| 13 — Public landing page | COMPLETE | `b669683` | Public Australian landing page with protected product routes and careful safety claims. |
+| 14 — Final QA | COMPLETE | Pending commit | Full available regression gate, CORS hardening, secret/log review and QA report. |
 
 ## Pre-Phase 8 authorisation remediation
 
@@ -42,7 +42,7 @@ Starting commit: `1477828`
 - **Regression coverage:** User A own-chat workflow; cross-user chat message read/list/update/delete denial; cross-user job/image/diagnosis/safety/similarity denial; body/path user-ID override resistance; missing, invalid and expired bearer tokens; authorised chat and similarity workflows.
 - **Equivalent-pattern review:** The affected service-role queries were inspected. `/analyse` and `/inpaint` do not accept private record identifiers or load stored private records, so they are not equivalent IDOR instances and were not expanded into this remediation.
 - **Verification:** Backend 142 passed (including 10 authorisation cases); frontend 5 passed; web production build passed; mobile TypeScript passed. The mobile package has no test script.
-- **Next:** Resume the autonomous redesign loop at Phase 8 after the remediation commit.
+- **Next:** Completed by the Phase 8–14 autonomous loop; see the final QA report.
 
 ## Phase 8 — Responsive application shell
 
@@ -100,6 +100,16 @@ Starting commit: `1477828`
 - **Files changed:** Public landing route/page, public/protected route policy tests, SEO title/description and theme metadata.
 - **Tests run:** Web lint, 38 web tests, web production build.
 - **Results:** All passed; existing plugin and chunk-size advisories remain.
-- **Commit hash:** Pending.
+- **Commit hash:** `b669683`.
 - **Known limitations:** Illustrative before/after uses lightweight CSS artwork rather than implying a real diagnostic outcome.
 - **Next phase:** Phase 14 — Final QA.
+
+## Phase 14 — Final QA
+
+- **Status:** COMPLETE — pending final corrections commit.
+- **Files changed:** Explicit backend CORS allowlist and tests, safe storage-error logging, environment/deployment documentation, final QA report.
+- **Tests run:** Backend 145 tests; web lint, 38 tests and production build; mobile TypeScript; conflict, whitespace, secret, service-role and unsafe-log scans.
+- **Results:** All automated gates passed. No credentials or frontend/mobile service-role key found.
+- **Commit hash:** Pending.
+- **Known limitations:** Recommendation is READY WITH CONDITIONS because public image-bucket URLs require an explicitly planned privacy migration before sensitive production use; device/browser/screen-reader QA remains manual.
+- **Next phase:** None — deployment remains a manual, unauthorised action.

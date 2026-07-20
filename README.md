@@ -68,6 +68,7 @@ npm run dev
 | `SUPABASE_URL` | Supabase project → Settings → API |
 | `SUPABASE_SERVICE_KEY` | Supabase project → Settings → API → service_role |
 | `SUPABASE_ANON_KEY` | Supabase project → Settings → API |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated production web origins, without paths |
 
 ### Frontend (Vercel)
 
