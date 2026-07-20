@@ -177,6 +177,7 @@ export default function RepairCard({ result, imageUri }: Props) {
           <Text style={styles.inpaintBtnText}>{inpaintError ? 'Try preview again' : 'See illustrative repaired preview'}</Text>
         )}
       </TouchableOpacity>}
+      {instructionsAllowed && result.steps.length > 0 && <TouchableOpacity style={styles.guideBtn} onPress={() => router.push({ pathname: '/guided', params: { result: JSON.stringify(result) } })}><Text style={styles.guideText}>Start guided repair</Text></TouchableOpacity>}
       {instructionsAllowed && inpaintError && <Text style={styles.previewError}>{inpaintError}</Text>}
 
       {instructionsAllowed && showInpaint && inpaintUrl && (
@@ -345,6 +346,8 @@ const styles = StyleSheet.create({
   materialCost: { fontSize: 14, color: '#F97316', fontWeight: '600' },
   safetyItem: { fontSize: 14, color: '#FBBF24', lineHeight: 24 },
   inpaintBtn: { marginHorizontal: 20, backgroundColor: '#F97316', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 16 },
+  guideBtn: { minHeight: 48, marginHorizontal: 20, backgroundColor: '#EAF0DF', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  guideText: { color: '#102F36', fontSize: 15, fontWeight: '800' },
   inpaintBtnText: { fontSize: 15, fontWeight: '700', color: '#0A0A0A' },
   inpaintContainer: { marginHorizontal: 20, marginBottom: 16 },
   inpaintLabel: { fontSize: 13, color: '#9CA3AF', marginBottom: 10 },

@@ -201,3 +201,7 @@ def test_missing_invalid_and_expired_tokens_are_rejected(client, headers):
     response = client.get("/chats", headers=headers)
     assert response.status_code == 401
     assert response.json() == {"detail": "Unauthorized"}
+
+
+def test_guided_assessment_verification_requires_authentication(client):
+    assert client.post("/assessments/verify", json={"result": {}}).status_code == 401

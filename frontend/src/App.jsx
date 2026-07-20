@@ -8,6 +8,7 @@ import Home from './pages/Home'
 import ProductShell from './components/ProductShell'
 import ShoppingLists from './pages/ShoppingLists'
 import SettingsPage from './pages/SettingsPage'
+import GuidedRepair from './pages/GuidedRepair'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/lists" element={<ShoppingLists />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/results" element={<Results />} />
+          <Route path="/guided" element={<GuidedRepair />} />
         </Route>
         <Route path="/" element={<Navigate to="/app" replace />} />
         <Route path="/history" element={<Navigate to="/repairs" replace />} />

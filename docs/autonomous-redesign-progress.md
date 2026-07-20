@@ -28,8 +28,8 @@ Starting commit: `1477828`
 | 8 — Responsive application shell | COMPLETE | `868131d` | Responsive web product navigation and mobile five-tab shell with central Scan action. |
 | 9 — Camera-first dashboard | COMPLETE | `b0303f1` | Camera/gallery/drop workflow with validation, progress, retry and jurisdiction gate. |
 | 10 — DIY eligibility interface | COMPLETE | `df62952` | Four authoritative levels, unresolved locks and versioned Level 2 acknowledgement. |
-| 11 — Diagnosis-result redesign | COMPLETE | Pending commit | Safety-first result order, responsive materials, gated illustrative preview and technical details. |
-| 12 — Guided repair mode | NOT STARTED | — | Depends on Phase 11. |
+| 11 — Diagnosis-result redesign | COMPLETE | `6678002` | Safety-first result order, responsive materials, gated illustrative preview and technical details. |
+| 12 — Guided repair mode | COMPLETE | Pending commit | Backend-verified entry, resumable steps, change escalation and completion feedback. |
 | 13 — Public landing page | NOT STARTED | — | Depends on Phase 12. |
 | 14 — Final QA | NOT STARTED | — | Depends on Phases 8–13. |
 
@@ -80,6 +80,16 @@ Starting commit: `1477828`
 - **Files changed:** Web result ordering, responsive material cards, collapsed diagnosis telemetry, late illustrative preview; mobile preview error/retry/label treatment; shared result capability and historical compatibility tests.
 - **Tests run:** 30 web tests, web lint/build, backend 142 tests, mobile TypeScript.
 - **Results:** All passed.
-- **Commit hash:** Pending.
+- **Commit hash:** `6678002`.
 - **Known limitations:** Automated screenshot comparison is unavailable; responsive material layouts were constrained structurally to avoid horizontal overflow.
 - **Next phase:** Phase 12 — Guided repair mode.
+
+## Phase 12 — Guided repair mode
+
+- **Status:** COMPLETE — pending phase commit.
+- **Files changed:** Authenticated backend assessment re-verification endpoint, web/mobile guided routes, entry/resume/escalation/completion logic and tests, result entry actions.
+- **Tests run:** Backend 143 tests, 37 web tests plus lint/build, mobile TypeScript.
+- **Results:** All passed.
+- **Commit hash:** Pending.
+- **Known limitations:** Progress is device-local and versioned; cross-device synchronisation would require a planned persistence schema and migration.
+- **Next phase:** Phase 13 — Public landing page.

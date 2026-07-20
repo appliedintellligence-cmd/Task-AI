@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import EligibilityCard from './EligibilityCard'
+import { useNavigate } from 'react-router-dom'
 import remarkGfm from 'remark-gfm'
 import RetailerLinks from './RetailerLinks'
 import { useSpeech } from '../hooks/useSpeech'
@@ -137,6 +138,7 @@ function OpenCVBadge({ metrics }) {
 }
 
 function RepairResult({ result, messageId }) {
+  const navigate = useNavigate()
   const [stepsOpen, setStepsOpen] = useState(true)
   const [copied, setCopied] = useState(false)
   const [repairedUrl, setRepairedUrl] = useState(null)
@@ -334,6 +336,7 @@ function RepairResult({ result, messageId }) {
             <RetailerLinks materials={result.materials} />
           </div>
         )}
+        {instructionsAllowed && result.steps?.length > 0 && <button onClick={()=>navigate('/guided',{state:{result}})} className="min-h-12 w-full rounded-xl bg-[#f28b45] px-4 font-black text-[#102f36]">Start guided repair</button>}
         <details className="rounded-xl border border-gray-200 p-3 text-xs text-gray-600"><summary className="min-h-11 cursor-pointer py-3 font-bold text-gray-800">Diagnosis details</summary><div className="space-y-2 pt-2">{result.confidence_level && <ConfidenceBadge level={result.confidence_level} score={result.confidence} />}{result.pipeline && <PipelineBadge pipeline={result.pipeline} />}<OpenCVBadge metrics={result.opencv_metrics} /><p>Validation: {result.diy_assessment?.validation_version || 'Not recorded'}</p><p>Policy: {result.diy_assessment?.policy_source?.policy_version || 'Not recorded'}</p>{result.repair_state && <p>Repair-state engine: {result.repair_state.engine || 'available'}</p>}</div></details>
       </div>
     </div>

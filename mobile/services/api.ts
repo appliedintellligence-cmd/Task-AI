@@ -184,3 +184,7 @@ export async function saveJob(
 export async function getJobs(token: string): Promise<Job[]> {
   return request<Job[]>('/jobs', {}, token);
 }
+
+export async function verifyAssessment(result: AnalyseResult, token: string, changedConditions: Record<string, boolean> = {}): Promise<AnalyseResult> {
+  return request<AnalyseResult>('/assessments/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ result, changed_conditions: changedConditions }) }, token);
+}

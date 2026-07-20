@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from dependencies import authenticated_user
 from services.supabase import save_job, get_job, get_jobs, get_similar_jobs
@@ -12,6 +12,11 @@ class JobRequest(BaseModel):
     user_id: Optional[str] = None
     image_url: Optional[str] = None
     result: dict
+
+
+class VerifyAssessmentRequest(BaseModel):
+    result: dict
+    changed_conditions: dict = Field(default_factory=dict)
 
 
 @router.post("/jobs")
@@ -48,3 +53,17 @@ async def similar_jobs(job_id: str, user_id: str = Depends(authenticated_user)):
         raise HTTPException(status_code=404, detail="Job not found")
     jobs = await get_similar_jobs(user_id, job_id)
     return jobs
+
+
+@router.post("/assessments/verify")
+async def verify_assessment(body: VerifyAssessmentRequest, user_id: str = Depends(authenticated_user)):
+    candidate = dict(body.result)
+    context = dict(candidate.get("assessment_context") or {})
+    answers = dict(context.get("user_answers") or {})
+    answers.update({key: value for key, value in body.changed_conditions.items() if value is True})
+    context["user_answers"] = answers
+    candidate["assessment_context"] = context
+    try:
+        return validate_result_for_save(candidate)
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=422, detail="Assessment could not be verified") from exc
