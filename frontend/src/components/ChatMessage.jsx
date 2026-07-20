@@ -172,17 +172,17 @@ function RepairResult({ result, messageId }) {
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm shadow-sm overflow-hidden">
+    <div className="flex flex-col bg-white border border-gray-200 rounded-2xl rounded-tl-sm shadow-sm overflow-hidden">
       {result.image_url && (
         <img src={result.image_url} alt="" className="w-full max-h-52 object-cover" />
       )}
 
       {instructionsAllowed && result.inpaint_prompt && (
-        <div className="border-t border-gray-100">
+        <div className="order-3 border-t border-gray-100">
           {repairedUrl ? (
             <div>
               <img src={repairedUrl} alt="AI repaired preview" className="w-full max-h-52 object-cover" />
-              <p className="text-xs text-center text-gray-400 py-1.5">AI repaired preview</p>
+              <p className="text-xs text-center text-gray-500 py-1.5">Illustrative AI preview — not a guarantee of repair outcome</p>
             </div>
           ) : (
             <div className="flex justify-center py-3">
@@ -212,21 +212,11 @@ function RepairResult({ result, messageId }) {
         </div>
       )}
 
-      <div className="p-4 space-y-4">
-        {result.diy_assessment && <EligibilityCard assessment={result.diy_assessment} onPermissionChange={setInstructionsAllowed} />}
+      <div className="order-2 p-4 space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-gray-900 leading-snug">{result.problem}</h3>
-            <div className="flex items-center gap-2 mb-2 flex-wrap mt-1.5">
-              {result.confidence_level && result.confidence != null && (
-                <ConfidenceBadge level={result.confidence_level} score={result.confidence} />
-              )}
-              {result.pipeline && (
-                <PipelineBadge pipeline={result.pipeline} />
-              )}
-            </div>
-            <OpenCVBadge metrics={result.opencv_metrics} />
             <div className="flex flex-wrap gap-1.5 mt-2">
               {result.severity && (
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${SEVERITY_CLS[result.severity] ?? 'bg-gray-100 text-gray-600'}`}>
@@ -265,6 +255,8 @@ function RepairResult({ result, messageId }) {
             </button>
           </div>
         </div>
+
+        {result.diy_assessment && <EligibilityCard assessment={result.diy_assessment} onPermissionChange={setInstructionsAllowed} />}
 
         {/* Clarification request */}
         {result.needs_clarification && (
@@ -331,34 +323,7 @@ function RepairResult({ result, messageId }) {
         {instructionsAllowed && result.materials?.length > 0 && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">Materials</p>
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
-              <table className="w-full text-xs">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left px-3 py-2 text-gray-500 font-medium">Item</th>
-                    <th className="text-right px-3 py-2 text-gray-500 font-medium">Qty</th>
-                    <th className="text-right px-3 py-2 text-gray-500 font-medium">Est. cost</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.materials.map((m, i) => (
-                    <tr key={i} className="border-t border-gray-100">
-                      <td className="px-3 py-2 text-gray-800">{m.name}</td>
-                      <td className="px-3 py-2 text-right text-gray-600">{m.quantity} {m.unit}</td>
-                      <td className="px-3 py-2 text-right text-gray-600">
-                        ${m.estimated_cost_aud?.toFixed(2) ?? '—'}
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="border-t border-gray-200 bg-gray-50 font-semibold">
-                    <td className="px-3 py-2 text-gray-700" colSpan={2}>Total</td>
-                    <td className="px-3 py-2 text-right text-gray-800">
-                      ${result.materials.reduce((s, m) => s + (m.estimated_cost_aud ?? 0), 0).toFixed(2)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <div className="grid gap-2 sm:grid-cols-2">{result.materials.map((m, i) => <div key={i} className="min-w-0 rounded-xl border border-gray-200 p-3 text-xs"><p className="break-words font-bold text-gray-800">{m.name}</p><p className="mt-1 text-gray-600">{m.quantity || 'As required'} {m.unit || ''}</p><p className="mt-1 font-semibold">{m.estimated_cost_aud == null ? 'Price unavailable' : `$${Number(m.estimated_cost_aud).toFixed(2)} AUD`}</p></div>)}</div>
           </div>
         )}
 
@@ -369,6 +334,7 @@ function RepairResult({ result, messageId }) {
             <RetailerLinks materials={result.materials} />
           </div>
         )}
+        <details className="rounded-xl border border-gray-200 p-3 text-xs text-gray-600"><summary className="min-h-11 cursor-pointer py-3 font-bold text-gray-800">Diagnosis details</summary><div className="space-y-2 pt-2">{result.confidence_level && <ConfidenceBadge level={result.confidence_level} score={result.confidence} />}{result.pipeline && <PipelineBadge pipeline={result.pipeline} />}<OpenCVBadge metrics={result.opencv_metrics} /><p>Validation: {result.diy_assessment?.validation_version || 'Not recorded'}</p><p>Policy: {result.diy_assessment?.policy_source?.policy_version || 'Not recorded'}</p>{result.repair_state && <p>Repair-state engine: {result.repair_state.engine || 'available'}</p>}</div></details>
       </div>
     </div>
   )

@@ -27,8 +27,8 @@ Starting commit: `1477828`
 |---|---|---|---|
 | 8 — Responsive application shell | COMPLETE | `868131d` | Responsive web product navigation and mobile five-tab shell with central Scan action. |
 | 9 — Camera-first dashboard | COMPLETE | `b0303f1` | Camera/gallery/drop workflow with validation, progress, retry and jurisdiction gate. |
-| 10 — DIY eligibility interface | COMPLETE | Pending commit | Four authoritative levels, unresolved locks and versioned Level 2 acknowledgement. |
-| 11 — Diagnosis-result redesign | NOT STARTED | — | Depends on Phase 10. |
+| 10 — DIY eligibility interface | COMPLETE | `df62952` | Four authoritative levels, unresolved locks and versioned Level 2 acknowledgement. |
+| 11 — Diagnosis-result redesign | COMPLETE | Pending commit | Safety-first result order, responsive materials, gated illustrative preview and technical details. |
 | 12 — Guided repair mode | NOT STARTED | — | Depends on Phase 11. |
 | 13 — Public landing page | NOT STARTED | — | Depends on Phase 12. |
 | 14 — Final QA | NOT STARTED | — | Depends on Phases 8–13. |
@@ -70,6 +70,16 @@ Starting commit: `1477828`
 - **Files changed:** Shared eligibility policy/UI helpers and tests, accessible web eligibility card, web instruction/preview locks, mobile assessment metadata and versioned acknowledgement/locks.
 - **Tests run:** 20 web tests, web build, backend 142 tests, mobile TypeScript.
 - **Results:** Passed after one focused syntax repair in the web copy helper.
-- **Commit hash:** Pending.
+- **Commit hash:** `df62952`.
 - **Known limitations:** Acknowledgement is persisted locally against assessment and policy versions; backend remains authoritative and continues stripping blocked instructions before delivery.
 - **Next phase:** Phase 11 — Diagnosis-result redesign.
+
+## Phase 11 — Diagnosis-result redesign
+
+- **Status:** COMPLETE — pending phase commit.
+- **Files changed:** Web result ordering, responsive material cards, collapsed diagnosis telemetry, late illustrative preview; mobile preview error/retry/label treatment; shared result capability and historical compatibility tests.
+- **Tests run:** 30 web tests, web lint/build, backend 142 tests, mobile TypeScript.
+- **Results:** All passed.
+- **Commit hash:** Pending.
+- **Known limitations:** Automated screenshot comparison is unavailable; responsive material layouts were constrained structurally to avoid horizontal overflow.
+- **Next phase:** Phase 12 — Guided repair mode.

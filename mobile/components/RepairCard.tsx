@@ -31,6 +31,7 @@ export default function RepairCard({ result, imageUri }: Props) {
   const [inpaintUrl, setInpaintUrl] = useState<string | null>(null);
   const [inpainting, setInpainting] = useState(false);
   const [showInpaint, setShowInpaint] = useState(false);
+  const [inpaintError, setInpaintError] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const assessment = result.diy_assessment;
   const ackKey = `taskai:precaution:${assessment?.validation_version || 'unknown'}:${assessment?.policy_source?.policy_version || 'unknown'}:${assessment?.assessed_at || 'unknown'}`;
@@ -43,12 +44,13 @@ export default function RepairCard({ result, imageUri }: Props) {
   async function handleInpaint() {
     if (inpaintUrl) { setShowInpaint(true); return; }
     setInpainting(true);
+    setInpaintError(null);
     try {
       const res = await inpaintImage(result.inpaint_prompt);
       setInpaintUrl(res.repaired_image_url);
       setShowInpaint(true);
-    } catch {
-      // silently ignore — user can retry
+    } catch (error: any) {
+      setInpaintError(error?.message || 'Could not generate the illustrative preview. Try again.');
     } finally {
       setInpainting(false);
     }
@@ -95,7 +97,6 @@ export default function RepairCard({ result, imageUri }: Props) {
         <Stat label="Difficulty" value={result.difficulty} />
         <Stat label="Time" value={`${result.estimated_time_hours}h`} />
         <Stat label="Cost" value={`$${result.estimated_cost_aud_min}–$${result.estimated_cost_aud_max}`} />
-        <Stat label="Confidence" value={`${result.confidence}%`} />
       </View>
 
       {/* Repair State Engine — before/after */}
@@ -173,13 +174,14 @@ export default function RepairCard({ result, imageUri }: Props) {
         {inpainting ? (
           <ActivityIndicator color="#0A0A0A" />
         ) : (
-          <Text style={styles.inpaintBtnText}>✨ See Repaired Preview</Text>
+          <Text style={styles.inpaintBtnText}>{inpaintError ? 'Try preview again' : 'See illustrative repaired preview'}</Text>
         )}
       </TouchableOpacity>}
+      {instructionsAllowed && inpaintError && <Text style={styles.previewError}>{inpaintError}</Text>}
 
       {instructionsAllowed && showInpaint && inpaintUrl && (
         <View style={styles.inpaintContainer}>
-          <Text style={styles.inpaintLabel}>AI-Generated Repair Preview</Text>
+          <Text style={styles.inpaintLabel}>Illustrative AI preview — not a guarantee of repair outcome</Text>
           <Image source={{ uri: inpaintUrl }} style={styles.inpaintImage} resizeMode="cover" />
           <TouchableOpacity onPress={() => setShowInpaint(false)}>
             <Text style={styles.hideText}>Hide</Text>
@@ -346,6 +348,7 @@ const styles = StyleSheet.create({
   inpaintBtnText: { fontSize: 15, fontWeight: '700', color: '#0A0A0A' },
   inpaintContainer: { marginHorizontal: 20, marginBottom: 16 },
   inpaintLabel: { fontSize: 13, color: '#9CA3AF', marginBottom: 10 },
+  previewError: { marginHorizontal: 20, marginBottom: 12, color: '#FCA5A5', fontSize: 13 },
   inpaintImage: { width: '100%', height: 240, borderRadius: 12 },
   hideText: { color: '#6B7280', fontSize: 13, marginTop: 8, textAlign: 'center' },
 });
