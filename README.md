@@ -38,6 +38,8 @@ AI-powered home repair assistant for Australian homeowners. Upload a photo of an
 
 ### Backend
 
+The backend targets Python 3.11 (Render is pinned by `backend/.python-version`).
+
 ```bash
 cd backend
 python -m venv .venv
