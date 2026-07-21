@@ -80,12 +80,23 @@ npm run dev
 | `VITE_SUPABASE_URL` | Same as `SUPABASE_URL` |
 | `VITE_SUPABASE_ANON_KEY` | Same as `SUPABASE_ANON_KEY` |
 
+### Mobile (Expo)
+
+| Variable | Value |
+|---|---|
+| `EXPO_PUBLIC_API_URL` | Production backend origin |
+| `EXPO_PUBLIC_SUPABASE_URL` | Same as `SUPABASE_URL` |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Same as `SUPABASE_ANON_KEY` |
+
+Never place `SUPABASE_SERVICE_KEY` in Vercel or Expo configuration.
+
 ## Supabase Setup
 
 1. Create a new Supabase project
-2. Run `db/schema.sql` in the SQL editor
-3. Storage → New bucket → name: `repair-photos`, set to public
-4. Authentication → Providers → enable Google OAuth
+2. Run `db/schema.sql` only for a new empty local/staging database
+3. Apply expand migrations in the exact order documented in `docs/production-rollout.md`
+4. Confirm `repair-photos-private` is private; never make it public
+5. Authentication → Providers → enable Google OAuth and configure the documented redirects
 
 ## Deploy
 
@@ -112,4 +123,5 @@ npm run dev
 | `POST` | `/chat` | Send message → repair advice |
 | `POST` | `/inpaint` | Generate repaired preview image |
 | `GET` | `/jobs` | List past repair jobs |
+| `GET` | `/jobs/{job_id}/photo-url` | Refresh an owner-authorised signed photo URL |
 | `GET` | `/health` | Health check |

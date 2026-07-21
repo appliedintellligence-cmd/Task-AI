@@ -1,4 +1,6 @@
-const BASE_URL = 'https://taskai-backend-6h3x.onrender.com';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
+if (!BASE_URL) throw new Error('EXPO_PUBLIC_API_URL is required');
 
 export interface Step {
   step_number: number;

@@ -113,3 +113,14 @@ Starting commit: `1477828`
 - **Commit hash:** `c4e497f`.
 - **Known limitations:** Recommendation is READY WITH CONDITIONS because public image-bucket URLs require an explicitly planned privacy migration before sensitive production use; device/browser/screen-reader QA remains manual.
 - **Next phase:** None — deployment remains a manual, unauthorised action.
+
+## Phase 15 — Production-readiness remediation
+
+- **Status:** COMPLETE locally; remote staging validation and dashboard checks remain manual conditions.
+- **Database rollout:** Added an idempotent corrective expand migration with owner-scoped RPCs and secure empty-result legacy shims. The contract migration is outside the automatic migration directory and must wait until the new backend is verified.
+- **Private photos:** New uploads require JWT authentication, use the private `repair-photos-private` bucket and store `user_id/job_id/random_filename` paths. Reads use five-minute signed URLs after server-side job ownership checks. Existing HTTPS URLs remain read-only during conversion.
+- **Recovery:** Added the public `/reset-password` workflow, recovery-session handling, validation, accessible states and Vercel SPA rewrites.
+- **Dependencies:** Pinned NumPy 1.26.4 and OpenCV headless 4.11.0.86; declared Python 3.11.11. A clean isolated install imported the full backend and passed 161 tests.
+- **Deployment control:** Render configuration now explicitly targets `main`, disables automatic deployment intent, declares `/health`, and retains the documented start command. Mobile endpoints and anonymous Supabase client settings now come from Expo public environment variables and have contract tests.
+- **Commits:** `da82b47`, `5656308`, `afd0a81`, `e929de0`, followed by the controlled-rollout documentation/configuration commit.
+- **No remote action:** No migration, deployment, merge or dashboard change was performed.
