@@ -10,12 +10,14 @@ import ShoppingLists from './pages/ShoppingLists'
 import SettingsPage from './pages/SettingsPage'
 import GuidedRepair from './pages/GuidedRepair'
 import Landing from './pages/Landing'
+import ResetPassword from './pages/ResetPassword'
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<Landing />} />
         <Route element={<AuthGuard><ProductShell /></AuthGuard>}>
           <Route path="/app" element={<Home />} />

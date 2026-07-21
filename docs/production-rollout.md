@@ -30,3 +30,18 @@ Before the contract migration, application rollback is safe because both RPC
 generations exist. After contract, the old backend must not be restored unless
 the secure empty-result compatibility shims from the expand migration are
 recreated first. Additive nullable columns should remain during rollback.
+
+## Supabase authentication redirects
+
+Set the Supabase Site URL to the canonical production web origin. Add exact
+redirect allow-list entries for both the production and staging origins:
+
+- `https://<production-origin>/`
+- `https://<production-origin>/reset-password`
+- `https://<staging-origin>/`
+- `https://<staging-origin>/reset-password`
+
+Add only intentionally supported preview URL patterns. Google OAuth returns to
+the web origin through Supabase's provider callback. Verify direct navigation
+and refresh of `/reset-password`; `frontend/vercel.json` rewrites application
+routes to the SPA entry point.
