@@ -87,7 +87,8 @@ export default function AnalyseScreen() {
     setAnalysisStage(0);
     setState('analysing');
     try {
-      const r = await analyseImage(imageUri, 'repair.jpg', jurisdiction);
+      if (!token) throw new Error('Sign in before uploading a repair photo.');
+      const r = await analyseImage(imageUri, 'repair.jpg', jurisdiction, token);
       setResult(r);
       setState('result');
     } catch (e: any) {
@@ -109,7 +110,7 @@ export default function AnalyseScreen() {
     }
     setSaving(true);
     try {
-      await saveJob(result.image_url ?? imageUri ?? null, result, token);
+      await saveJob(result, token);
       setSaved(true);
     } catch (e: any) {
       Alert.alert('Save failed', e.message);

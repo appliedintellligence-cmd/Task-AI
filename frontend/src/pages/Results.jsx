@@ -5,6 +5,7 @@ import { apiFetch } from '../lib/api'
 import RepairSteps from '../components/RepairSteps'
 import MaterialsList from '../components/MaterialsList'
 import RetailerLinks from '../components/RetailerLinks'
+import RepairPhoto from '../components/RepairPhoto'
 
 const SEVERITY_COLOURS = {
   low: 'bg-green-100 text-green-800',
@@ -55,7 +56,8 @@ export default function Results() {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          image_url: result.image_url,
+          job_id: result.job_id,
+          photo_path: result.photo_path,
           result,
         }),
       })
@@ -108,7 +110,7 @@ export default function Results() {
         {/* Problem summary */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           {result.image_url && (
-            <img src={result.image_url} alt="Repair" className="w-full h-56 object-cover rounded-xl mb-6" />
+            <RepairPhoto jobId={result.job_id} src={result.image_url} alt="Repair" className="w-full h-56 object-cover rounded-xl mb-6" />
           )}
           <h1 className="text-2xl font-bold text-gray-900 mb-3">{result.problem}</h1>
           {result.diy_assessment && (

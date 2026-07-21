@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getProfileJurisdiction, supabase } from '../lib/supabase'
 import { apiFetch } from '../lib/api'
 import PhotoUpload from '../components/PhotoUpload'
+import RepairPhoto from '../components/RepairPhoto'
 
 export default function Home() {
   const [user, setUser] = useState(null)
@@ -113,11 +114,11 @@ export default function Home() {
               {recentJobs.map((job) => (
                 <button
                   key={job.id}
-                  onClick={() => navigate('/results', { state: { result: { ...job.result_json, image_url: job.image_url } } })}
+                  onClick={() => navigate('/results', { state: { result: { ...job.result_json, job_id: job.id, photo_path: job.photo_path, image_url: job.image_url } } })}
                   className="w-full flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition text-left"
                 >
                   {job.image_url && (
-                    <img src={job.image_url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                    <RepairPhoto jobId={job.id} src={job.image_url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
                   )}
                   <div>
                     <p className="font-medium text-gray-900">{job.problem}</p>

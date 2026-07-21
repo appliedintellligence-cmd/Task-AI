@@ -1,9 +1,12 @@
 import json
 import logging
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+import uuid
+
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from dependencies import authenticated_user
 from models.enums import Jurisdiction
-from services.supabase import upload_image
+from services.supabase import upload_private_image
 from services.opencv_metrics import extract_metrics, build_metrics_context
 from services.openrouter import (
     extract_facts_qwen,
@@ -24,6 +27,7 @@ async def analyse(
     file: UploadFile = File(...),
     jurisdiction: str | None = Form(None),
     user_answers: str = Form("{}"),
+    user_id: str = Depends(authenticated_user),
 ):
     try:
         if jurisdiction:
@@ -50,17 +54,25 @@ async def analyse(
 
     if cv_metrics["opencv_status"] == "success":
         upload_bytes = enhanced_bytes
+        upload_content_type = "image/jpeg"
         logger.info("Using OpenCV enhanced image")
     else:
         upload_bytes = image_bytes
+        upload_content_type = file.content_type
         logger.warning(f"OpenCV failed: {cv_metrics['opencv_status']}")
 
-    image_url = None
+    job_id = str(uuid.uuid4())
+    photo = {}
     try:
         filename = file.filename or "upload.jpg"
-        image_url = await upload_image(upload_bytes, filename)
-    except Exception:
-        logger.warning("Storage upload failed (non-fatal)")
+        photo = await upload_private_image(
+            user_id, job_id, upload_bytes, filename, upload_content_type
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.warning("Private storage upload failed")
+        raise HTTPException(status_code=503, detail="Photo storage is temporarily unavailable") from exc
 
     # ════════════════════════════════════════════════
     # STAGE 2-4 — Groq Maverick vision → Nemotron repair plan
@@ -115,7 +127,8 @@ async def analyse(
             "jurisdiction": jurisdiction,
             "user_answers": parsed_answers,
         }
-        result["image_url"] = image_url
+        result.update(photo)
+        result["job_id"] = job_id
         result["opencv_metrics"] = cv_metrics
         result["confidence_level"] = confidence_level(plan.get("confidence", 0))
         result["pipeline"] = "opencv-maverick-nemotron-rse"

@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 import dependencies
 import routes.chat as chat_routes
 import routes.jobs as job_routes
+from services.supabase import validate_photo_path
 
 app = FastAPI()
 app.include_router(chat_routes.router)
@@ -106,11 +107,21 @@ def client(monkeypatch):
     captured_jobs = []
 
     async def save_job(**kwargs):
+        if kwargs.get("photo_path"):
+            validate_photo_path(kwargs["photo_path"], kwargs["user_id"], kwargs["job_id"])
         captured_jobs.append(kwargs)
         return "new-job"
 
     monkeypatch.setattr(job_routes, "save_job", save_job)
     monkeypatch.setattr(job_routes, "validate_result_for_save", lambda result: result)
+    monkeypatch.setattr(
+        job_routes,
+        "get_job_photo_url",
+        lambda user_id, job_id: (
+            {"job_id": job_id, "image_url": "https://signed.example/owner", "legacy": False}
+            if user_id == USER_A and job_id == JOB_A else None
+        ),
+    )
 
     with TestClient(app) as test_client:
         app.state.saved_messages = saved_messages
@@ -205,3 +216,32 @@ def test_missing_invalid_and_expired_tokens_are_rejected(client, headers):
 
 def test_guided_assessment_verification_requires_authentication(client):
     assert client.post("/assessments/verify", json={"result": {}}).status_code == 401
+
+
+def test_owner_can_refresh_photo_but_other_users_and_anonymous_callers_cannot(client):
+    own = client.get(f"/jobs/{JOB_A}/photo-url", headers=auth())
+    assert own.status_code == 200
+    assert own.json()["image_url"].startswith("https://signed.example/")
+    assert client.get(f"/jobs/{JOB_A}/photo-url", headers=auth("token-b")).status_code == 404
+    assert client.get(f"/jobs/{JOB_A}/photo-url").status_code == 401
+
+
+def test_forged_photo_path_is_rejected_on_job_save(client):
+    forged = f"{USER_B}/{JOB_A}/{'a' * 32}.jpg"
+    response = client.post(
+        "/jobs",
+        headers={**auth(), "Content-Type": "application/json"},
+        json={"job_id": JOB_A, "photo_path": forged, "result": {}},
+    )
+    assert response.status_code == 422
+    assert response.json() == {"detail": "Photo ownership validation failed"}
+
+
+def test_new_job_write_does_not_persist_client_supplied_public_url(client):
+    response = client.post(
+        "/jobs",
+        headers={**auth(), "Content-Type": "application/json"},
+        json={"image_url": "https://legacy.example/new.jpg", "result": {}},
+    )
+    assert response.status_code == 200
+    assert client.app.state.captured_jobs[-1]["legacy_image_url"] is None

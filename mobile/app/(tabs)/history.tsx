@@ -4,7 +4,7 @@ import {
   ActivityIndicator, SafeAreaView, RefreshControl, Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { getJobs, Job } from '@/services/api';
+import { getJobs, Job, refreshJobPhoto } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import RepairCard from '@/components/RepairCard';
 
@@ -33,6 +33,19 @@ export default function HistoryScreen() {
   }, [user, token]);
 
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
+
+  const refreshPhoto = useCallback(async (jobId: string) => {
+    if (!token) return;
+    try {
+      const fresh = await refreshJobPhoto(jobId, token);
+      setJobs((current) => current.map((job) => job.id === jobId ? {
+        ...job, image_url: fresh.image_url, image_url_expires_at: fresh.image_url_expires_at,
+      } : job));
+      setSelectedJob((current) => current?.id === jobId ? { ...current, image_url: fresh.image_url } : current);
+    } catch {
+      setJobs((current) => current.map((job) => job.id === jobId ? { ...job, image_url: undefined } : job));
+    }
+  }, [token]);
 
   if (!user) {
     return (
@@ -92,7 +105,7 @@ export default function HistoryScreen() {
             <TouchableOpacity style={styles.card} onPress={() => setSelectedJob(item)}>
               <View style={styles.cardLeft}>
                 {item.image_url ? (
-                  <Image source={{ uri: item.image_url }} style={styles.thumbnail} />
+                  <Image source={{ uri: item.image_url }} style={styles.thumbnail} onError={() => refreshPhoto(item.id)} />
                 ) : (
                   <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
                     <Text style={styles.thumbnailIcon}>🔧</Text>

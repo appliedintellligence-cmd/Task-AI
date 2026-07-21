@@ -67,6 +67,9 @@ export interface AnalyseResult {
   when_to_call_professional: string;
   inpaint_prompt: string;
   image_url?: string;
+  image_url_expires_at?: string;
+  photo_path?: string;
+  job_id?: string;
   pipeline: string;
   diy_assessment?: {
     jurisdiction: string | null;
@@ -97,6 +100,8 @@ export interface ChatResponse {
 export interface Job {
   id: string;
   image_url?: string;
+  image_url_expires_at?: string;
+  photo_path?: string;
   result: AnalyseResult;
   created_at: string;
 }
@@ -121,11 +126,11 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
-export async function analyseImage(imageUri: string, filename: string, jurisdiction: string | null): Promise<AnalyseResult> {
+export async function analyseImage(imageUri: string, filename: string, jurisdiction: string | null, token: string): Promise<AnalyseResult> {
   const body = new FormData();
   body.append('file', { uri: imageUri, name: filename, type: 'image/jpeg' } as any);
   if (jurisdiction) body.append('jurisdiction', jurisdiction);
-  return request<AnalyseResult>('/analyse', { method: 'POST', body });
+  return request<AnalyseResult>('/analyse', { method: 'POST', body }, token);
 }
 
 export async function sendChat(
@@ -166,7 +171,6 @@ export async function inpaintImage(prompt: string): Promise<{ repaired_image_url
 }
 
 export async function saveJob(
-  imageUrl: string | null,
   result: AnalyseResult,
   token: string,
 ): Promise<{ job_id: string }> {
@@ -175,14 +179,20 @@ export async function saveJob(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image_url: imageUrl, result }),
+      body: JSON.stringify({ job_id: result.job_id, photo_path: result.photo_path, result }),
     },
     token,
   );
 }
 
 export async function getJobs(token: string): Promise<Job[]> {
-  return request<Job[]>('/jobs', {}, token);
+  const rows = await request<any[]>('/jobs', {}, token);
+  return rows.map((row) => ({ ...row, result: row.result_json || row.result }));
+}
+
+export async function refreshJobPhoto(jobId: string, token: string): Promise<{ image_url: string; image_url_expires_at?: string; legacy: boolean }> {
+  if (!jobId || !token) throw new Error('Photo refresh requires an authenticated saved job');
+  return request(`/jobs/${encodeURIComponent(jobId)}/photo-url`, {}, token);
 }
 
 export async function verifyAssessment(result: AnalyseResult, token: string, changedConditions: Record<string, boolean> = {}): Promise<AnalyseResult> {

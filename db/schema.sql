@@ -6,6 +6,8 @@ CREATE TABLE jobs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id),
   image_url TEXT,
+  photo_path TEXT,
+  photo_storage TEXT CHECK (photo_storage IN ('private', 'legacy_public')),
   problem TEXT,
   severity TEXT,
   difficulty TEXT,
@@ -33,9 +35,15 @@ ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users see own jobs" ON jobs
   FOR ALL USING (auth.uid() = user_id);
 
--- Storage bucket (run via Supabase dashboard or CLI)
+-- Legacy storage bucket (do not use for new uploads or make public)
 -- INSERT INTO storage.buckets (id, name, public)
 -- VALUES ('repair-photos', 'repair-photos', false);
+
+-- New private storage bucket. New database installations should also apply
+-- db/migrations/20260721_add_private_repair_photos.sql for ownership policy.
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('repair-photos-private', 'repair-photos-private', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
 
 -- Backend-only similarity search. Both the source and candidates must have the
 -- authenticated owner supplied by the backend after JWT verification.

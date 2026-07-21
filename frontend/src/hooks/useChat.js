@@ -34,14 +34,18 @@ export function useChat(jurisdiction) {
         const form = new FormData()
         form.append('file', imageFile)
         appendConfirmedJurisdiction(form, jurisdiction)
-        const result = await apiFetch(`${API}/analyse`, { method: 'POST', body: form })
+        if (!token) throw new ApiError('Sign in before uploading a repair photo.', { isAuth: true })
+        const result = await apiFetch(`${API}/analyse`, {
+          method: 'POST', body: form,
+          headers: { Authorization: `Bearer ${token}` },
+        })
 
         // Save to DB non-blocking
         if (session) {
           apiFetch(`${API}/jobs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ image_url: result.image_url, result }),
+            body: JSON.stringify({ job_id: result.job_id, photo_path: result.photo_path, result }),
           }).catch(() => {})
         }
 

@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 EXPAND = ROOT / "db/migrations/20260721_expand_deployment_compatibility.sql"
 CONTRACT = ROOT / "db/post_deployment/20260721_contract_remove_legacy_rpcs.sql"
+PRIVATE_PHOTOS = ROOT / "db/migrations/20260721_add_private_repair_photos.sql"
 
 
 def sql(path: Path) -> str:
@@ -33,3 +34,14 @@ def test_contract_is_outside_automatic_migration_directory_and_removes_only_lega
     assert "drop function if exists match_messages(vector, float, int)" in text
     assert "find_similar_jobs_for_user" not in text
     assert "match_messages_for_user" not in text
+
+
+def test_private_photo_migration_is_non_destructive_and_owner_scoped():
+    text = sql(PRIVATE_PHOTOS)
+    assert "add column if not exists photo_path" in text
+    assert "'repair-photos-private', 'repair-photos-private', false" in text
+    assert "for all to service_role" in text
+    assert "to authenticated" not in text
+    assert "to anon" not in text
+    assert "delete" not in text
+    assert "update jobs" not in text

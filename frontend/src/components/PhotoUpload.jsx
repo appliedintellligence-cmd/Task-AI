@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from '../lib/api'
 import { ANALYSIS_STAGES, canSubmitDiagnosis, validateImageFile } from '../lib/diagnosis'
 import { appendConfirmedJurisdiction } from '../lib/jurisdiction'
+import { supabase } from '../lib/supabase'
 
 export default function PhotoUpload({ onComplete, jurisdiction, onMissingJurisdiction }) {
   const [preview, setPreview] = useState(null)
@@ -35,7 +36,12 @@ export default function PhotoUpload({ onComplete, jurisdiction, onMissingJurisdi
     try {
       const body = appendConfirmedJurisdiction(new FormData(), jurisdiction)
       body.append('file', file)
-      const data = await apiFetch(`${import.meta.env.VITE_API_URL}/analyse`, { method: 'POST', body })
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Sign in before uploading a repair photo.')
+      const data = await apiFetch(`${import.meta.env.VITE_API_URL}/analyse`, {
+        method: 'POST', body,
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
       onComplete(data)
     } catch (err) { setError(err.message || 'Analysis failed. Check your connection and try again.') }
     finally { setLoading(false) }

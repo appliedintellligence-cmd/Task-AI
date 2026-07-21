@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { apiFetch, ApiError } from '../lib/api'
+import RepairPhoto from '../components/RepairPhoto'
 
 export default function History() {
   const [jobs, setJobs] = useState([])
@@ -98,11 +99,11 @@ export default function History() {
             {jobs.map((job) => (
               <button
                 key={job.id}
-                onClick={() => navigate('/results', { state: { result: { ...job.result_json, image_url: job.image_url } } })}
+                onClick={() => navigate('/results', { state: { result: { ...job.result_json, job_id: job.id, photo_path: job.photo_path, image_url: job.image_url } } })}
                 className="w-full flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-2xl hover:border-blue-300 hover:shadow-md transition text-left"
               >
                 {job.image_url ? (
-                  <img src={job.image_url} alt="" className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+                  <RepairPhoto jobId={job.id} src={job.image_url} alt="" className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
                 ) : (
                   <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
                     <span className="text-2xl">🔧</span>
