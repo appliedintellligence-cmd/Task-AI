@@ -54,6 +54,7 @@ Expand stage:
 3. `db/migrations/20260718_enforce_private_record_ownership.sql`
 4. `db/migrations/20260721_expand_deployment_compatibility.sql`
 5. `db/migrations/20260721_add_private_repair_photos.sql`
+6. `db/migrations/20260722_fix_messages_halfvec_index.sql`
 
 If step 3 has not already run, apply steps 3 and 4 atomically. Then deploy and
 verify the backend and web application. Only afterward, in a separate approved

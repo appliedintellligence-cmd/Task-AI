@@ -5,6 +5,27 @@ files to an unconfirmed database target.
 
 ## Database order
 
+### Completely empty staging project
+
+Apply these files one at a time in this exact order:
+
+1. `db/schema.sql`
+2. `db/migrations/20260718_add_profile_jurisdiction.sql`
+3. `db/migrations/20260718_add_job_safety_assessment.sql`
+4. `db/migrations/20260721_expand_deployment_compatibility.sql`
+5. `db/migrations/20260718_enforce_private_record_ownership.sql`
+6. `db/migrations/20260721_add_private_repair_photos.sql`
+7. `db/migrations/20260722_fix_messages_halfvec_index.sql`
+
+The compatibility expand migration precedes the ownership migration only for a
+clean database because the ownership migration revokes the legacy RPC
+signatures. A clean baseline does not otherwise contain those signatures. The
+final corrective migration idempotently recreates the supported
+`halfvec(3072)` expression index and the matching owner-scoped RPC. Do not run
+the post-deployment contract migration during staging bootstrap.
+
+### Existing database expand rollout
+
 1. Back up the database, function grants, RLS policies, auth configuration and
    storage metadata.
 2. On staging, apply `20260718_add_profile_jurisdiction.sql`, then
@@ -18,9 +39,11 @@ files to an unconfirmed database target.
    return no rows, while owner-scoped RPCs must return only owner records.
 4. Apply `db/migrations/20260721_add_private_repair_photos.sql`, then verify the
    bucket remains private and has no anon/authenticated direct-access policy.
-5. Apply the same expand sequence in the controlled production change window.
-6. Deploy and verify the new backend, then the web application.
-7. Only after the previous backend no longer receives traffic, manually apply
+5. Apply `db/migrations/20260722_fix_messages_halfvec_index.sql` and verify that
+   `match_messages_for_user` remains owner-scoped and accepts `vector(3072)`.
+6. Apply the same expand sequence in the controlled production change window.
+7. Deploy and verify the new backend, then the web application.
+8. Only after the previous backend no longer receives traffic, manually apply
    `db/post_deployment/20260721_contract_remove_legacy_rpcs.sql`.
 
 The legacy compatibility functions deliberately return empty sets. This keeps

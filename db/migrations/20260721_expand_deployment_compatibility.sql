@@ -72,14 +72,18 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT m.id, m.content, m.result_json,
-    1 - (m.embedding <=> query_embedding)
+    1 - (
+      m.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)
+    )
   FROM messages m
   JOIN chats c ON c.id = m.chat_id
   WHERE c.user_id = owner_id
     AND m.role = 'assistant'
     AND m.embedding IS NOT NULL
-    AND 1 - (m.embedding <=> query_embedding) > match_threshold
-  ORDER BY m.embedding <=> query_embedding
+    AND 1 - (
+      m.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)
+    ) > match_threshold
+  ORDER BY m.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)
   LIMIT match_count;
 $$;
 

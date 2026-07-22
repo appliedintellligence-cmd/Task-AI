@@ -93,8 +93,10 @@ Never place `SUPABASE_SERVICE_KEY` in Vercel or Expo configuration.
 ## Supabase Setup
 
 1. Create a new Supabase project
-2. Run `db/schema.sql` only for a new empty local/staging database
-3. Apply expand migrations in the exact order documented in `docs/production-rollout.md`
+2. For a completely empty local/staging database, apply the baseline and
+   migrations in the exact clean-bootstrap order in `docs/production-rollout.md`
+3. For an existing environment, use the separate expand rollout order in that
+   document; do not replay `db/schema.sql`
 4. Confirm `repair-photos-private` is private; never make it public
 5. Authentication → Providers → enable Google OAuth and configure the documented redirects
 

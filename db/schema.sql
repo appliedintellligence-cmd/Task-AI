@@ -151,14 +151,18 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT m.id, m.content, m.result_json,
-    1 - (m.embedding <=> query_embedding) AS similarity
+    1 - (
+      m.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)
+    ) AS similarity
   FROM messages m
   JOIN chats c ON c.id = m.chat_id
   WHERE c.user_id = owner_id
     AND m.role = 'assistant'
     AND m.embedding IS NOT NULL
-    AND 1 - (m.embedding <=> query_embedding) > match_threshold
-  ORDER BY m.embedding <=> query_embedding
+    AND 1 - (
+      m.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)
+    ) > match_threshold
+  ORDER BY m.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)
   LIMIT match_count;
 $$;
 
@@ -166,7 +170,9 @@ REVOKE ALL ON FUNCTION match_messages_for_user(UUID, vector, FLOAT, INT) FROM PU
 GRANT EXECUTE ON FUNCTION match_messages_for_user(UUID, vector, FLOAT, INT) TO service_role;
 
 CREATE INDEX IF NOT EXISTS messages_embedding_idx ON messages
-  USING ivfflat (embedding vector_cosine_ops)
+  USING ivfflat (
+    (embedding::halfvec(3072)) halfvec_cosine_ops
+  )
   WITH (lists = 100);
 
 -- Migration: add embedding column to existing jobs table
