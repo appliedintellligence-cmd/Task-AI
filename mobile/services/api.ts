@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 if (!BASE_URL) throw new Error('EXPO_PUBLIC_API_URL is required');
@@ -122,6 +124,10 @@ async function request<T>(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (res.status === 401 && token) {
+      await supabase.auth.signOut({ scope: 'local' });
+      throw new Error('Your session has expired. Sign in again.');
+    }
     throw new Error((err as any).detail || `Request failed: ${res.status}`);
   }
 
@@ -164,12 +170,17 @@ export async function deleteChat(chatId: string, token: string) {
   return request<{ ok: boolean }>(`/chats/${chatId}`, { method: 'DELETE' }, token);
 }
 
-export async function inpaintImage(prompt: string): Promise<{ repaired_image_url: string }> {
+export async function inpaintImage(
+  prompt: string,
+  token: string,
+  resource: { job_id?: string; photo_path?: string } = {},
+): Promise<{ repaired_image_url: string }> {
+  if (!token) throw new Error('Sign in to generate a repaired preview');
   return request<{ repaired_image_url: string }>('/inpaint', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ inpaint_prompt: prompt }),
-  });
+    body: JSON.stringify({ inpaint_prompt: prompt, ...resource }),
+  }, token);
 }
 
 export async function saveJob(

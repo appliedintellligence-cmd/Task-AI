@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import RetailerLinks from './RetailerLinks'
 import { useSpeech } from '../hooks/useSpeech'
 import { apiFetch } from '../lib/api'
+import { supabase } from '../lib/supabase'
 
 const SEVERITY_CLS = {
   low: 'bg-green-100 text-green-700',
@@ -151,10 +152,19 @@ function RepairResult({ result, messageId }) {
     setGenerating(true)
     setPreviewError(null)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Sign in to generate a repaired preview.')
       const data = await apiFetch(`${import.meta.env.VITE_API_URL}/inpaint`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inpaint_prompt: result.inpaint_prompt }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          inpaint_prompt: result.inpaint_prompt,
+          job_id: result.job_id,
+          photo_path: result.photo_path,
+        }),
       })
       setRepairedUrl(data.repaired_image_url)
     } catch (err) {

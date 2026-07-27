@@ -11,6 +11,7 @@ import {
 import { AnalyseResult, RepairState, inpaintImage } from '@/services/api';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '@/context/AuthContext';
 
 const SEVERITY_COLOR = { low: '#22C55E', medium: '#F59E0B', high: '#EF4444' };
 const PHASE_LABEL: Record<string, string> = {
@@ -28,6 +29,7 @@ interface Props {
 
 export default function RepairCard({ result, imageUri }: Props) {
   const router = useRouter();
+  const { token } = useAuth();
   const [inpaintUrl, setInpaintUrl] = useState<string | null>(null);
   const [inpainting, setInpainting] = useState(false);
   const [showInpaint, setShowInpaint] = useState(false);
@@ -46,7 +48,11 @@ export default function RepairCard({ result, imageUri }: Props) {
     setInpainting(true);
     setInpaintError(null);
     try {
-      const res = await inpaintImage(result.inpaint_prompt);
+      if (!token) throw new Error('Sign in to generate a repaired preview.');
+      const res = await inpaintImage(result.inpaint_prompt, token, {
+        job_id: result.job_id,
+        photo_path: result.photo_path,
+      });
       setInpaintUrl(res.repaired_image_url);
       setShowInpaint(true);
     } catch (error: any) {
