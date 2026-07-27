@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { apiFetch } from '../lib/api'
 import RepairSteps from '../components/RepairSteps'
 import MaterialsList from '../components/MaterialsList'
 import RetailerLinks from '../components/RetailerLinks'
+import RepairPhoto from '../components/RepairPhoto'
 
 const SEVERITY_COLOURS = {
   low: 'bg-green-100 text-green-800',
@@ -23,6 +25,7 @@ export default function Results() {
   const [user, setUser] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState(null)
   const [copied, setCopied] = useState(false)
 
   const result = state?.result
@@ -42,22 +45,28 @@ export default function Results() {
       return
     }
     setSaving(true)
-    const session = (await supabase.auth.getSession()).data.session
-    const apiUrl = import.meta.env.VITE_API_URL
-    await fetch(`${apiUrl}/jobs`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        user_id: user.id,
-        image_url: result.image_url,
-        result,
-      }),
-    })
-    setSaving(false)
-    setSaved(true)
+    setSaveError(null)
+    try {
+      const session = (await supabase.auth.getSession()).data.session
+      const apiUrl = import.meta.env.VITE_API_URL
+      await apiFetch(`${apiUrl}/jobs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          job_id: result.job_id,
+          photo_path: result.photo_path,
+          result,
+        }),
+      })
+      setSaved(true)
+    } catch (err) {
+      setSaveError(err.message || 'Could not save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   function handleShare() {
@@ -89,13 +98,32 @@ export default function Results() {
         </div>
       </header>
 
+      {saveError && (
+        <div className="max-w-3xl mx-auto px-6 pt-4">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+            {saveError}
+          </div>
+        </div>
+      )}
+
       <main className="max-w-3xl mx-auto px-6 py-10 space-y-8">
         {/* Problem summary */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           {result.image_url && (
-            <img src={result.image_url} alt="Repair" className="w-full h-56 object-cover rounded-xl mb-6" />
+            <RepairPhoto jobId={result.job_id} src={result.image_url} alt="Repair" className="w-full h-56 object-cover rounded-xl mb-6" />
           )}
           <h1 className="text-2xl font-bold text-gray-900 mb-3">{result.problem}</h1>
+          {result.diy_assessment && (
+            <div className="mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200 text-sm">
+              <p className="font-semibold text-blue-900">Assessment jurisdiction: {result.diy_assessment.jurisdiction || 'Not selected'}</p>
+              <p className="text-blue-700 capitalize">
+                {result.diy_assessment.safety_level == null
+                  ? result.diy_assessment.assessment_status.replaceAll('_', ' ')
+                  : `Safety level ${result.diy_assessment.safety_level}`}
+              </p>
+              <button type="button" onClick={() => navigate('/')} className="text-xs text-blue-700 underline mt-1">Change state and reassess</button>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2 mb-4">
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${SEVERITY_COLOURS[result.severity] || 'bg-gray-100 text-gray-700'}`}>
               {result.severity} severity

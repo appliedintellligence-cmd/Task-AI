@@ -38,6 +38,8 @@ AI-powered home repair assistant for Australian homeowners. Upload a photo of an
 
 ### Backend
 
+The backend targets Python 3.11 (Render is pinned by `backend/.python-version`).
+
 ```bash
 cd backend
 python -m venv .venv
@@ -68,6 +70,7 @@ npm run dev
 | `SUPABASE_URL` | Supabase project → Settings → API |
 | `SUPABASE_SERVICE_KEY` | Supabase project → Settings → API → service_role |
 | `SUPABASE_ANON_KEY` | Supabase project → Settings → API |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated production web origins, without paths |
 
 ### Frontend (Vercel)
 
@@ -77,12 +80,25 @@ npm run dev
 | `VITE_SUPABASE_URL` | Same as `SUPABASE_URL` |
 | `VITE_SUPABASE_ANON_KEY` | Same as `SUPABASE_ANON_KEY` |
 
+### Mobile (Expo)
+
+| Variable | Value |
+|---|---|
+| `EXPO_PUBLIC_API_URL` | Production backend origin |
+| `EXPO_PUBLIC_SUPABASE_URL` | Same as `SUPABASE_URL` |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Same as `SUPABASE_ANON_KEY` |
+
+Never place `SUPABASE_SERVICE_KEY` in Vercel or Expo configuration.
+
 ## Supabase Setup
 
 1. Create a new Supabase project
-2. Run `db/schema.sql` in the SQL editor
-3. Storage → New bucket → name: `repair-photos`, set to public
-4. Authentication → Providers → enable Google OAuth
+2. For a completely empty local/staging database, apply the baseline and
+   migrations in the exact clean-bootstrap order in `docs/production-rollout.md`
+3. For an existing environment, use the separate expand rollout order in that
+   document; do not replay `db/schema.sql`
+4. Confirm `repair-photos-private` is private; never make it public
+5. Authentication → Providers → enable Google OAuth and configure the documented redirects
 
 ## Deploy
 
@@ -109,4 +125,5 @@ npm run dev
 | `POST` | `/chat` | Send message → repair advice |
 | `POST` | `/inpaint` | Generate repaired preview image |
 | `GET` | `/jobs` | List past repair jobs |
+| `GET` | `/jobs/{job_id}/photo-url` | Refresh an owner-authorised signed photo URL |
 | `GET` | `/health` | Health check |

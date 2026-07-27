@@ -34,6 +34,9 @@ export default function LoginScreen() {
       <View style={styles.inner}>
         <Text style={styles.logo}>task.ai</Text>
         <Text style={styles.tagline}>Home repair intelligence</Text>
+        <Text style={styles.accountNotice}>
+          An account is required to protect repair photos, run diagnosis, and save jobs securely.
+        </Text>
 
         <TextInput
           style={styles.input}
@@ -61,8 +64,8 @@ export default function LoginScreen() {
           <Text style={styles.link}>Don't have an account? <Text style={styles.linkAccent}>Sign Up</Text></Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.replace('/(tabs)')}>
-          <Text style={styles.skip}>Continue without account →</Text>
+        <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
+          <Text style={styles.forgot}>Forgot password?</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -74,6 +77,7 @@ const styles = StyleSheet.create({
   inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 28 },
   logo: { fontSize: 40, fontWeight: '800', color: '#F97316', marginBottom: 6 },
   tagline: { fontSize: 15, color: '#6B7280', marginBottom: 40 },
+  accountNotice: { color: '#9CA3AF', fontSize: 13, lineHeight: 19, marginTop: -24, marginBottom: 24 },
   input: {
     backgroundColor: '#1A1A1A', borderRadius: 12, paddingHorizontal: 16,
     paddingVertical: 14, fontSize: 15, color: '#FFFFFF', marginBottom: 14,
@@ -86,5 +90,5 @@ const styles = StyleSheet.create({
   btnText: { color: '#0A0A0A', fontWeight: '700', fontSize: 16 },
   link: { textAlign: 'center', color: '#6B7280', fontSize: 14 },
   linkAccent: { color: '#F97316', fontWeight: '600' },
-  skip: { textAlign: 'center', color: '#4B5563', fontSize: 13, marginTop: 20 },
+  forgot: { textAlign: 'center', color: '#F97316', fontSize: 13, marginTop: 20 },
 });

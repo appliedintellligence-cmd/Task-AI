@@ -1,4 +1,8 @@
-const BASE_URL = 'https://taskai-backend-6h3x.onrender.com';
+import { supabase } from './supabase';
+
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
+if (!BASE_URL) throw new Error('EXPO_PUBLIC_API_URL is required');
 
 export interface Step {
   step_number: number;
@@ -67,7 +71,27 @@ export interface AnalyseResult {
   when_to_call_professional: string;
   inpaint_prompt: string;
   image_url?: string;
+  image_url_expires_at?: string;
+  photo_path?: string;
+  job_id?: string;
   pipeline: string;
+  diy_assessment?: {
+    jurisdiction: string | null;
+    safety_level: 1 | 2 | 3 | 4 | null;
+    assessment_status: 'complete' | 'assessment_pending' | 'more_information_required' | 'jurisdiction_required' | 'policy_unverified';
+    reason: string;
+    legal_status?: string;
+    safety_status?: string;
+    warning_signs?: string[];
+    questions_required?: string[];
+    allowed_actions?: string[];
+    prohibited_actions?: string[];
+    professional_type?: string | null;
+    validation_version?: string;
+    assessed_at?: string;
+    policy_source?: { regulator?: string; url?: string; last_reviewed_at?: string; policy_version?: string };
+  };
+  requires_reassessment?: boolean;
 }
 
 export interface ChatResponse {
@@ -80,6 +104,8 @@ export interface ChatResponse {
 export interface Job {
   id: string;
   image_url?: string;
+  image_url_expires_at?: string;
+  photo_path?: string;
   result: AnalyseResult;
   created_at: string;
 }
@@ -98,37 +124,42 @@ async function request<T>(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (res.status === 401 && token) {
+      await supabase.auth.signOut({ scope: 'local' });
+      throw new Error('Your session has expired. Sign in again.');
+    }
     throw new Error((err as any).detail || `Request failed: ${res.status}`);
   }
 
   return res.json() as Promise<T>;
 }
 
-export async function analyseImage(imageUri: string, filename: string): Promise<AnalyseResult> {
+export async function analyseImage(imageUri: string, filename: string, jurisdiction: string | null, token: string): Promise<AnalyseResult> {
   const body = new FormData();
   body.append('file', { uri: imageUri, name: filename, type: 'image/jpeg' } as any);
-  return request<AnalyseResult>('/analyse', { method: 'POST', body });
+  if (jurisdiction) body.append('jurisdiction', jurisdiction);
+  return request<AnalyseResult>('/analyse', { method: 'POST', body }, token);
 }
 
 export async function sendChat(
   message: string,
   chatId?: string,
-  userId?: string,
   token?: string,
+  jurisdiction?: string | null,
 ): Promise<ChatResponse> {
   return request<ChatResponse>(
     '/chat',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, chat_id: chatId, user_id: userId }),
+      body: JSON.stringify({ message, chat_id: chatId, jurisdiction: jurisdiction || undefined }),
     },
     token,
   );
 }
 
-export async function getChats(userId: string, token: string) {
-  return request<any[]>(`/chats/${userId}`, {}, token);
+export async function getChats(token: string) {
+  return request<any[]>('/chats', {}, token);
 }
 
 export async function getChatMessages(chatId: string, token: string) {
@@ -139,17 +170,20 @@ export async function deleteChat(chatId: string, token: string) {
   return request<{ ok: boolean }>(`/chats/${chatId}`, { method: 'DELETE' }, token);
 }
 
-export async function inpaintImage(prompt: string): Promise<{ repaired_image_url: string }> {
+export async function inpaintImage(
+  prompt: string,
+  token: string,
+  resource: { job_id?: string; photo_path?: string } = {},
+): Promise<{ repaired_image_url: string }> {
+  if (!token) throw new Error('Sign in to generate a repaired preview');
   return request<{ repaired_image_url: string }>('/inpaint', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ inpaint_prompt: prompt }),
-  });
+    body: JSON.stringify({ inpaint_prompt: prompt, ...resource }),
+  }, token);
 }
 
 export async function saveJob(
-  userId: string,
-  imageUrl: string | null,
   result: AnalyseResult,
   token: string,
 ): Promise<{ job_id: string }> {
@@ -158,12 +192,22 @@ export async function saveJob(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, image_url: imageUrl, result }),
+      body: JSON.stringify({ job_id: result.job_id, photo_path: result.photo_path, result }),
     },
     token,
   );
 }
 
-export async function getJobs(userId: string, token: string): Promise<Job[]> {
-  return request<Job[]>(`/jobs/${userId}`, {}, token);
+export async function getJobs(token: string): Promise<Job[]> {
+  const rows = await request<any[]>('/jobs', {}, token);
+  return rows.map((row) => ({ ...row, result: row.result_json || row.result }));
+}
+
+export async function refreshJobPhoto(jobId: string, token: string): Promise<{ image_url: string; image_url_expires_at?: string; legacy: boolean }> {
+  if (!jobId || !token) throw new Error('Photo refresh requires an authenticated saved job');
+  return request(`/jobs/${encodeURIComponent(jobId)}/photo-url`, {}, token);
+}
+
+export async function verifyAssessment(result: AnalyseResult, token: string, changedConditions: Record<string, boolean> = {}): Promise<AnalyseResult> {
+  return request<AnalyseResult>('/assessments/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ result, changed_conditions: changedConditions }) }, token);
 }

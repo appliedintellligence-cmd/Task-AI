@@ -5,7 +5,7 @@ groq
 supabase
 python-dotenv
 httpx
-numpy
+numpy==1.26.4
 pillow
-opencv-python-headless
+opencv-python-headless==4.11.0.86
 replicate

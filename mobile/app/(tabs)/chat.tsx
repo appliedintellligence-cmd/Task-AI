@@ -2,7 +2,9 @@ import React, { useState, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Platform, ActivityIndicator, SafeAreaView,
+  Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { sendChat, Material } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import ChatBubble from '@/components/ChatBubble';
@@ -15,7 +17,8 @@ interface Message {
 }
 
 export default function ChatScreen() {
-  const { user, token } = useAuth();
+  const { user, token, jurisdiction } = useAuth();
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -25,6 +28,12 @@ export default function ChatScreen() {
   const send = useCallback(async () => {
     const text = input.trim();
     if (!text || sending) return;
+    if (!jurisdiction) {
+      Alert.alert('State or territory required', 'Choose your jurisdiction before requesting repair advice.', [
+        { text: 'Choose state', onPress: () => router.push('/(tabs)/settings') },
+      ]);
+      return;
+    }
 
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: text };
     setMessages((prev) => [...prev, userMsg]);
@@ -32,7 +41,7 @@ export default function ChatScreen() {
     setSending(true);
 
     try {
-      const res = await sendChat(text, chatId, user?.id, token ?? undefined);
+      const res = await sendChat(text, chatId, token ?? undefined, jurisdiction);
       setChatId(res.chat_id);
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -45,14 +54,14 @@ export default function ChatScreen() {
       const errMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I couldn't connect. Please try again.',
+        content: "Sorry, I couldn't connect. Please try again.",
       };
       setMessages((prev) => [...prev, errMsg]);
     } finally {
       setSending(false);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     }
-  }, [input, chatId, user, token, sending]);
+  }, [input, chatId, user, token, jurisdiction, sending]);
 
   function newChat() {
     setMessages([]);
@@ -98,7 +107,7 @@ export default function ChatScreen() {
                 <ChatBubble role={item.role} content={item.content} />
                 {item.materials && item.materials.length > 0 && (
                   <View style={styles.materialsChips}>
-                    {item.materials.map((m, i) => (
+                    {item.materials.map((m: Material, i: number) => (
                       <View key={i} style={styles.chip}>
                         <Text style={styles.chipText}>{m.name}</Text>
                         {m.estimated_cost_aud ? (

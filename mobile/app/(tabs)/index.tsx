@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View, Text, StyleSheet, TouchableOpacity, Image,
   ActivityIndicator, ScrollView, Alert, SafeAreaView,
@@ -9,15 +10,44 @@ import { useAuth } from '@/context/AuthContext';
 import RepairCard from '@/components/RepairCard';
 
 type State = 'idle' | 'picked' | 'analysing' | 'result' | 'error';
+const ANALYSIS_STAGES = ['Checking image quality', 'Identifying the affected area', 'Assessing hazards', 'Checking DIY eligibility', 'Preparing the result'];
 
 export default function AnalyseScreen() {
-  const { user, token } = useAuth();
+  const { user, token, jurisdiction } = useAuth();
+  const router = useRouter();
+  const previousJurisdiction = useRef(jurisdiction);
+  const submitting = useRef(false);
   const [state, setState] = useState<State>('idle');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [result, setResult] = useState<AnalyseResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [analysisStage, setAnalysisStage] = useState(0);
+
+  useEffect(() => {
+    if (state !== 'analysing') return;
+    const timer = setInterval(() => setAnalysisStage((value) => Math.min(value + 1, ANALYSIS_STAGES.length - 1)), 1100);
+    return () => clearInterval(timer);
+  }, [state]);
+
+  useEffect(() => {
+    if (previousJurisdiction.current && jurisdiction && previousJurisdiction.current !== jurisdiction && result) {
+      setResult({
+        ...result,
+        steps: [], materials: [], tools_required: [], inpaint_prompt: '',
+        requires_reassessment: true,
+        diy_assessment: result.diy_assessment ? {
+          ...result.diy_assessment,
+          safety_level: null,
+          assessment_status: 'assessment_pending',
+          reason: 'Your profile jurisdiction changed. Reassess this repair before using instructions.',
+        } : result.diy_assessment,
+      });
+      setSaved(false);
+    }
+    previousJurisdiction.current = jurisdiction;
+  }, [jurisdiction]);
 
   async function pickImage(fromCamera: boolean) {
     const picker = fromCamera
@@ -31,6 +61,11 @@ export default function AnalyseScreen() {
     });
 
     if (!res.canceled && res.assets[0]) {
+      const asset = res.assets[0];
+      if (asset.fileSize && asset.fileSize > 12 * 1024 * 1024) {
+        Alert.alert('Photo too large', 'Choose a photo smaller than 12 MB.');
+        return;
+      }
       setImageUri(res.assets[0].uri);
       setResult(null);
       setSaved(false);
@@ -39,26 +74,43 @@ export default function AnalyseScreen() {
   }
 
   async function handleAnalyse() {
-    if (!imageUri) return;
+    if (!imageUri || submitting.current) return;
+    if (!jurisdiction) {
+      Alert.alert(
+        'State or territory required',
+        'Choose your state or territory before diagnosis so the correct DIY rules can be applied.',
+        [{ text: 'Choose state', onPress: () => router.push('/(tabs)/settings') }],
+      );
+      return;
+    }
+    submitting.current = true;
+    setAnalysisStage(0);
     setState('analysing');
     try {
-      const r = await analyseImage(imageUri, 'repair.jpg');
+      if (!token) throw new Error('Sign in before uploading a repair photo.');
+      const r = await analyseImage(imageUri, 'repair.jpg', jurisdiction, token);
       setResult(r);
       setState('result');
     } catch (e: any) {
       setErrorMsg(e.message || 'Analysis failed. Try a clearer photo.');
       setState('error');
+    } finally {
+      submitting.current = false;
     }
   }
 
   async function handleSave() {
+    if (result?.requires_reassessment) {
+      Alert.alert('Reassessment required', 'Run the diagnosis again using your current state or territory before saving.');
+      return;
+    }
     if (!result || !user || !token) {
       Alert.alert('Sign in to save analyses');
       return;
     }
     setSaving(true);
     try {
-      await saveJob(user.id, result.image_url ?? imageUri ?? null, result, token);
+      await saveJob(result, token);
       setSaved(true);
     } catch (e: any) {
       Alert.alert('Save failed', e.message);
@@ -89,9 +141,9 @@ export default function AnalyseScreen() {
       {state === 'idle' && (
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>🔧</Text>
-          <Text style={styles.emptyTitle}>Analyse a Home Repair</Text>
+          <Text style={styles.emptyTitle}>Not sure how to fix it? Take a photo.</Text>
           <Text style={styles.emptySubtitle}>
-            Take or upload a photo and get an instant AI-powered repair plan
+            We’ll assess visible hazards and check DIY eligibility for {jurisdiction || 'your jurisdiction'}.
           </Text>
           <TouchableOpacity style={styles.primaryBtn} onPress={() => pickImage(true)}>
             <Text style={styles.primaryBtnText}>📷  Take Photo</Text>
@@ -120,8 +172,8 @@ export default function AnalyseScreen() {
       {state === 'analysing' && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#F97316" />
-          <Text style={styles.loadingTitle}>Analysing repair…</Text>
-          <Text style={styles.loadingSubtitle}>Running OpenCV + AI vision pipeline</Text>
+          <Text accessibilityLiveRegion="polite" style={styles.loadingTitle}>{ANALYSIS_STAGES[analysisStage]}…</Text>
+          {ANALYSIS_STAGES.map((item, index) => <Text key={item} style={styles.loadingSubtitle}>{index < analysisStage ? '✓' : index === analysisStage ? '●' : '○'} {item}</Text>)}
         </View>
       )}
 
@@ -135,7 +187,7 @@ export default function AnalyseScreen() {
             <TouchableOpacity
               style={[styles.saveBtn, saved && styles.saveBtnDone]}
               onPress={handleSave}
-              disabled={saving || saved}
+              disabled={saving || saved || result.requires_reassessment}
             >
               {saving ? (
                 <ActivityIndicator color="#0A0A0A" size="small" />

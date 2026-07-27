@@ -6,10 +6,22 @@ CREATE TABLE jobs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id),
   image_url TEXT,
+  photo_path TEXT,
+  photo_storage TEXT CHECK (photo_storage IN ('private', 'legacy_public')),
   problem TEXT,
   severity TEXT,
   difficulty TEXT,
   result_json JSONB,
+  jurisdiction TEXT,
+  safety_level SMALLINT,
+  assessment_status TEXT DEFAULT 'assessment_pending',
+  legal_status TEXT,
+  safety_status TEXT,
+  overall_status TEXT,
+  policy_version TEXT,
+  validation_version TEXT,
+  policy_sources JSONB DEFAULT '[]'::jsonb,
+  assessed_at TIMESTAMPTZ,
   embedding vector(768),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -23,12 +35,23 @@ ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users see own jobs" ON jobs
   FOR ALL USING (auth.uid() = user_id);
 
--- Storage bucket (run via Supabase dashboard or CLI)
+-- Legacy storage bucket (do not use for new uploads or make public)
 -- INSERT INTO storage.buckets (id, name, public)
 -- VALUES ('repair-photos', 'repair-photos', false);
 
--- Similarity search RPC (SECURITY DEFINER bypasses RLS so comparisons are cross-user)
-CREATE OR REPLACE FUNCTION find_similar_jobs(job_id UUID, match_count INT DEFAULT 5)
+-- New private storage bucket. New database installations should also apply
+-- db/migrations/20260721_add_private_repair_photos.sql for ownership policy.
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('repair-photos-private', 'repair-photos-private', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
+
+-- Backend-only similarity search. Both the source and candidates must have the
+-- authenticated owner supplied by the backend after JWT verification.
+CREATE OR REPLACE FUNCTION find_similar_jobs_for_user(
+  source_job_id UUID,
+  owner_id UUID,
+  match_count INT DEFAULT 5
+)
 RETURNS TABLE (
   id UUID,
   image_url TEXT,
@@ -41,11 +64,14 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   query_embedding vector(768);
 BEGIN
-  SELECT embedding INTO query_embedding FROM jobs WHERE jobs.id = job_id;
+  SELECT embedding INTO query_embedding
+  FROM jobs
+  WHERE jobs.id = source_job_id AND jobs.user_id = owner_id;
 
   IF query_embedding IS NULL THEN
     RAISE EXCEPTION 'Job not found or has no embedding';
@@ -62,12 +88,16 @@ BEGIN
     j.created_at,
     (1 - (j.embedding <=> query_embedding))::FLOAT AS similarity
   FROM jobs j
-  WHERE j.id != job_id
+  WHERE j.id != source_job_id
+    AND j.user_id = owner_id
     AND j.embedding IS NOT NULL
   ORDER BY j.embedding <=> query_embedding
   LIMIT match_count;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION find_similar_jobs_for_user(UUID, UUID, INT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION find_similar_jobs_for_user(UUID, UUID, INT) TO service_role;
 
 -- Chat history tables
 CREATE TABLE chats (
@@ -103,8 +133,9 @@ CREATE POLICY "Users own messages" ON messages
 ALTER TABLE messages DROP COLUMN IF EXISTS embedding;
 ALTER TABLE messages ADD COLUMN embedding vector(3072);
 
-DROP FUNCTION IF EXISTS match_messages;
-CREATE OR REPLACE FUNCTION match_messages(
+DROP FUNCTION IF EXISTS match_messages_for_user;
+CREATE OR REPLACE FUNCTION match_messages_for_user(
+  owner_id UUID,
   query_embedding vector(3072),
   match_threshold float DEFAULT 0.8,
   match_count int DEFAULT 5
@@ -115,19 +146,33 @@ RETURNS TABLE (
   result_json JSONB,
   similarity float
 )
-LANGUAGE SQL STABLE AS $$
-  SELECT id, content, result_json,
-    1 - (embedding <=> query_embedding) AS similarity
-  FROM messages
-  WHERE role = 'assistant'
-    AND embedding IS NOT NULL
-    AND 1 - (embedding <=> query_embedding) > match_threshold
-  ORDER BY embedding <=> query_embedding
+LANGUAGE SQL STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT m.id, m.content, m.result_json,
+    1 - (
+      m.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)
+    ) AS similarity
+  FROM messages m
+  JOIN chats c ON c.id = m.chat_id
+  WHERE c.user_id = owner_id
+    AND m.role = 'assistant'
+    AND m.embedding IS NOT NULL
+    AND 1 - (
+      m.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)
+    ) > match_threshold
+  ORDER BY m.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)
   LIMIT match_count;
 $$;
 
+REVOKE ALL ON FUNCTION match_messages_for_user(UUID, vector, FLOAT, INT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION match_messages_for_user(UUID, vector, FLOAT, INT) TO service_role;
+
 CREATE INDEX IF NOT EXISTS messages_embedding_idx ON messages
-  USING ivfflat (embedding vector_cosine_ops)
+  USING ivfflat (
+    (embedding::halfvec(3072)) halfvec_cosine_ops
+  )
   WITH (lists = 100);
 
 -- Migration: add embedding column to existing jobs table
@@ -140,6 +185,7 @@ CREATE TABLE profiles (
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
   phone TEXT,
+  jurisdiction TEXT CHECK (jurisdiction IN ('ACT','NSW','NT','QLD','SA','TAS','VIC','WA')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -152,12 +198,17 @@ CREATE POLICY "Users manage own profile" ON profiles
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, first_name, last_name, phone)
+  INSERT INTO profiles (id, first_name, last_name, phone, jurisdiction)
   VALUES (
     NEW.id,
-    NEW.raw_user_meta_data->>'first_name',
-    NEW.raw_user_meta_data->>'last_name',
-    NEW.raw_user_meta_data->>'phone'
+    COALESCE(NEW.raw_user_meta_data->>'first_name', split_part(NEW.email, '@', 1)),
+    COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+    NEW.raw_user_meta_data->>'phone',
+    CASE
+      WHEN NEW.raw_user_meta_data->>'jurisdiction' IN ('ACT','NSW','NT','QLD','SA','TAS','VIC','WA')
+      THEN NEW.raw_user_meta_data->>'jurisdiction'
+      ELSE NULL
+    END
   );
   RETURN NEW;
 END;

@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {applyProgress,canEnterGuided,progressKey,shouldEscalate} from './guidedRepair.js'
+for(const level of [1,2,3,4])test(`guided entry enforces level ${level}`,()=>assert.equal(canEnterGuided({diy_assessment:{assessment_status:'complete',safety_level:level},steps:[{}]},level===2),level<3))
+test('direct route bypass cannot enter unresolved or suppressed repair',()=>{assert.equal(canEnterGuided({diy_assessment:{assessment_status:'policy_unverified',safety_level:null},steps:[{}]},true),false);assert.equal(canEnterGuided({diy_assessment:{assessment_status:'complete',safety_level:1},instructions_suppressed:true,steps:[{}]},true),false)})
+test('resume progress clamps to available steps and versioned key',()=>{assert.equal(applyProgress(3,9),2);assert.match(progressKey({diy_assessment:{validation_version:'2',assessed_at:'now'}}),/2:now/)})
+test('any changed safety condition escalates',()=>assert.equal(shouldEscalate({smoke:true}),true))

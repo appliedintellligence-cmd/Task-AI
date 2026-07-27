@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, supabase } from '../lib/supabase'
+import { JURISDICTIONS, isJurisdiction } from '../lib/jurisdiction'
 
 const TABS = ['Login', 'Register']
 
 const INITIAL_LOGIN = { email: '', password: '' }
-const INITIAL_REGISTER = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '', phone: '' }
+const INITIAL_REGISTER = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '', phone: '', jurisdiction: '' }
 
 function validate(tab, fields) {
   const errors = {}
@@ -25,6 +26,7 @@ function validate(tab, fields) {
     if (!fields.phone) errors.phone = 'Phone number is required'
     else if (!/^(\+61|0)[2-9]\d{8}$/.test(fields.phone.replace(/\s/g, '')))
       errors.phone = 'Enter a valid Australian number (e.g. 0412 345 678)'
+    if (!isJurisdiction(fields.jurisdiction)) errors.jurisdiction = 'Select your state or territory'
   }
   return errors
 }
@@ -77,6 +79,7 @@ export default function Login() {
       register.firstName.trim(),
       register.lastName.trim(),
       normalisePhone(register.phone),
+      register.jurisdiction,
     )
     setLoading(false)
     if (error) { setServerError(error.message); return }
@@ -306,6 +309,25 @@ export default function Login() {
                   className={inputClass('phone')}
                 />
                 {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="register-jurisdiction" className="block text-sm font-medium text-gray-700 mb-1">
+                  State or territory
+                </label>
+                <select
+                  id="register-jurisdiction"
+                  name="jurisdiction"
+                  value={register.jurisdiction}
+                  onChange={setField(setRegister)}
+                  aria-invalid={Boolean(errors.jurisdiction)}
+                  className={inputClass('jurisdiction')}
+                >
+                  <option value="">Select state or territory</option>
+                  {JURISDICTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Required because DIY licensing rules differ across Australia. We do not collect your address.</p>
+                {errors.jurisdiction && <p className="text-xs text-red-500 mt-1">{errors.jurisdiction}</p>}
               </div>
 
               <button

@@ -1,0 +1,4 @@
+import React from 'react';
+import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+export default function ListsScreen(){return <SafeAreaView style={s.safe}><View style={s.content}><Text style={s.eyebrow}>SHOPPING LISTS</Text><Text style={s.title}>Materials for your repairs</Text><View style={s.card}><Text style={s.body}>Materials saved from eligible repair plans will appear here.</Text></View></View></SafeAreaView>}
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:'#F7F3E9'},content:{padding:24,paddingTop:40},eyebrow:{fontSize:12,fontWeight:'800',letterSpacing:2,color:'#B95320'},title:{fontSize:30,fontWeight:'900',color:'#102F36',marginTop:8},card:{marginTop:28,padding:22,borderRadius:18,backgroundColor:'#FFFDF7',borderWidth:1,borderColor:'#DDD5C3'},body:{color:'#52676A',fontSize:16,lineHeight:24}});

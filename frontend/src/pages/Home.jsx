@@ -1,22 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { getProfileJurisdiction, supabase } from '../lib/supabase'
+import { apiFetch } from '../lib/api'
 import PhotoUpload from '../components/PhotoUpload'
+import RepairPhoto from '../components/RepairPhoto'
 
 export default function Home() {
   const [user, setUser] = useState(null)
   const [recentJobs, setRecentJobs] = useState([])
+  const [jurisdiction, setJurisdiction] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchRecentJobs(session.user.id, session.access_token)
+      if (session?.user) { fetchRecentJobs(session.user.id, session.access_token); getProfileJurisdiction(session.user.id).then(setJurisdiction) }
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchRecentJobs(session.user.id, session.access_token)
+      if (session?.user) { fetchRecentJobs(session.user.id, session.access_token); getProfileJurisdiction(session.user.id).then(setJurisdiction) }
     })
 
     return () => listener.subscription.unsubscribe()
@@ -24,12 +27,13 @@ export default function Home() {
 
   async function fetchRecentJobs(userId, token) {
     const apiUrl = import.meta.env.VITE_API_URL
-    const res = await fetch(`${apiUrl}/jobs/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (res.ok) {
-      const data = await res.json()
+    try {
+      const data = await apiFetch(`${apiUrl}/jobs`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       setRecentJobs(data.slice(0, 5))
+    } catch {
+      // non-fatal on the landing page
     }
   }
 
@@ -47,12 +51,12 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-full bg-[#f7f3e9]">
       {/* Header */}
-      <header className="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+      <header className="border-b border-[#ddd5c3] px-4 py-4 sm:px-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-blue-600">task.ai</h1>
-          <p className="text-xs text-gray-500">Fix anything with AI</p>
+          <h1 className="text-2xl font-black text-[#0d3339]">Good to see you</h1>
+          <p className="text-xs text-[#607176]">Jurisdiction: {jurisdiction || 'Not selected'}</p>
         </div>
         <div className="flex items-center gap-3">
           {user ? (
@@ -89,29 +93,32 @@ export default function Home() {
       </header>
 
       {/* Hero */}
-      <main className="max-w-2xl mx-auto px-6 py-12">
-        <div className="text-center mb-10">
-          <h2 className="text-4xl font-bold text-gray-900 mb-3">Fix anything with AI</h2>
-          <p className="text-lg text-gray-500">
-            Take a photo of any home repair issue and get step-by-step instructions, materials list, and store links.
+      <main className="max-w-4xl mx-auto px-4 py-8 sm:px-8 sm:py-12">
+        <div className="mb-8">
+          <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-[#b95320]">New diagnosis</p>
+          <h2 className="mt-2 text-4xl font-black text-[#102f36] sm:text-5xl">Not sure how to fix it? Take a photo.</h2>
+          <p className="mt-4 max-w-2xl text-lg text-[#52676a]">
+            We’ll inspect the visible damage, check hazards and apply the policy verified for your jurisdiction before showing repair guidance.
           </p>
+          {!jurisdiction && <button onClick={() => navigate('/settings')} className="mt-4 min-h-11 rounded-xl bg-[#fff0df] px-4 font-bold text-[#9b431c]">Choose your state or territory</button>}
         </div>
 
-        <PhotoUpload onComplete={handleAnalysisComplete} />
+        <PhotoUpload onComplete={handleAnalysisComplete} jurisdiction={jurisdiction} onMissingJurisdiction={() => navigate('/settings')} />
+        <div className="mt-5 flex flex-wrap gap-3 text-sm"><button onClick={() => navigate('/diagnose')} className="min-h-11 rounded-xl border border-[#bcb39f] px-4 font-bold text-[#0d3339]">Describe it in text</button><button onClick={() => navigate('/diagnose')} className="min-h-11 rounded-xl border border-[#bcb39f] px-4 font-bold text-[#0d3339]">Use voice</button></div>
 
         {/* Recent jobs */}
         {user && recentJobs.length > 0 && (
           <div className="mt-12">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Recent repairs</h3>
+            <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-[#52676a] uppercase tracking-wide mb-4">Recent repairs</h3><button onClick={() => navigate('/repairs')} className="text-sm font-bold text-[#b95320]">View all</button></div>
             <div className="space-y-3">
               {recentJobs.map((job) => (
                 <button
                   key={job.id}
-                  onClick={() => navigate('/results', { state: { result: { ...job.result_json, image_url: job.image_url } } })}
+                  onClick={() => navigate('/results', { state: { result: { ...job.result_json, job_id: job.id, photo_path: job.photo_path, image_url: job.image_url } } })}
                   className="w-full flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition text-left"
                 >
                   {job.image_url && (
-                    <img src={job.image_url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                    <RepairPhoto jobId={job.id} src={job.image_url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
                   )}
                   <div>
                     <p className="font-medium text-gray-900">{job.problem}</p>
@@ -121,7 +128,7 @@ export default function Home() {
               ))}
             </div>
             <button
-              onClick={() => navigate('/history')}
+              onClick={() => navigate('/repairs')}
               className="mt-4 text-sm text-blue-600 hover:underline"
             >
               View all history →

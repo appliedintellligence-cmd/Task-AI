@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/reset-password", "destination": "/index.html" },
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/diagnose", "destination": "/index.html" },
+    { "source": "/repairs", "destination": "/index.html" },
+    { "source": "/history", "destination": "/index.html" },
+    { "source": "/lists", "destination": "/index.html" },
+    { "source": "/settings", "destination": "/index.html" },
+    { "source": "/results", "destination": "/index.html" },
+    { "source": "/guided", "destination": "/index.html" }
+  ]
+}

@@ -202,6 +202,8 @@ Return ONLY valid JSON, no markdown, no commentary:
   "confidence_reason": "clear image, obvious crack pattern",
   "needs_clarification": false,
   "clarification_question": null,
+  "work_category": "policy category: electrical|gasfitting|plumbing_water_supply|plumbing_sanitary|plumbing_drainage|plumbing_roofing_stormwater|plumbing_backflow|structural|hazardous_material|cosmetic_finishes|work_at_height|unknown",
+  "task_classification": "specific task in snake_case, never a legal conclusion",
   "problem": "Cracked black ceramic floor tile",
   "severity": "low|medium|high",
   "root_cause": "specific cause explanation including what likely caused it",

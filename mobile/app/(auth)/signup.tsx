@@ -5,23 +5,28 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
+import { JURISDICTIONS, Jurisdiction } from '@/constants/jurisdiction';
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [jurisdiction, setJurisdiction] = useState<Jurisdiction | null>(null);
   const { signUp } = useAuth();
   const router = useRouter();
 
   async function handleSignup() {
-    if (!email || !password) return;
+    if (!email || !password || !jurisdiction) {
+      Alert.alert('State or territory required', 'Select where the property is located so the correct DIY policy can be applied.');
+      return;
+    }
     if (password.length < 6) {
       Alert.alert('Password must be at least 6 characters');
       return;
     }
     setLoading(true);
     try {
-      await signUp(email.trim(), password);
+      await signUp(email.trim(), password, jurisdiction);
       Alert.alert('Account created', 'Check your email to confirm your account, then sign in.');
       router.replace('/(auth)/login');
     } catch (e: any) {
@@ -49,6 +54,22 @@ export default function SignupScreen() {
           value={email}
           onChangeText={setEmail}
         />
+
+        <Text style={styles.fieldLabel}>State or territory</Text>
+        <Text style={styles.help}>Required for Australian DIY licensing rules. We do not collect your address or infer your location.</Text>
+        <View style={styles.jurisdictionGrid} accessibilityLabel="Australian state or territory">
+          {JURISDICTIONS.map((code) => (
+            <TouchableOpacity
+              key={code}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: jurisdiction === code }}
+              style={[styles.jurisdictionOption, jurisdiction === code && styles.jurisdictionSelected]}
+              onPress={() => setJurisdiction(code)}
+            >
+              <Text style={[styles.jurisdictionText, jurisdiction === code && styles.jurisdictionTextSelected]}>{code}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         <TextInput
           style={styles.input}
           placeholder="Password (min 6 characters)"
@@ -80,6 +101,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14, fontSize: 15, color: '#FFFFFF', marginBottom: 14,
     borderWidth: 1, borderColor: '#2A2A2A',
   },
+  fieldLabel: { color: '#FFFFFF', fontWeight: '600', marginTop: 2, marginBottom: 4 },
+  help: { color: '#6B7280', fontSize: 12, lineHeight: 17, marginBottom: 10 },
+  jurisdictionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  jurisdictionOption: { borderWidth: 1, borderColor: '#374151', borderRadius: 9, paddingVertical: 9, width: '22%', alignItems: 'center' },
+  jurisdictionSelected: { backgroundColor: '#F97316', borderColor: '#F97316' },
+  jurisdictionText: { color: '#D1D5DB', fontWeight: '700' },
+  jurisdictionTextSelected: { color: '#0A0A0A' },
   btn: {
     backgroundColor: '#F97316', borderRadius: 12, paddingVertical: 15,
     alignItems: 'center', marginTop: 6, marginBottom: 20,

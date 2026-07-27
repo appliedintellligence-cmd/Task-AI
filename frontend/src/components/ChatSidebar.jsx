@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { apiFetch } from '../lib/api'
 
 const API = import.meta.env.VITE_API_URL
 
@@ -30,10 +31,14 @@ export default function ChatSidebar({
 
   async function fetchChats() {
     if (!user || !token) return
-    const res = await fetch(`${API}/chats/${user.id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (res.ok) setChats(await res.json())
+    try {
+      const data = await apiFetch(`${API}/chats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setChats(data)
+    } catch {
+      // non-fatal: keep any chats already loaded
+    }
   }
 
   useEffect(() => {
@@ -48,10 +53,14 @@ export default function ChatSidebar({
 
   async function handleDelete(e, chatId) {
     e.stopPropagation()
-    await fetch(`${API}/chats/${chatId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    try {
+      await apiFetch(`${API}/chats/${chatId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    } catch {
+      // ignore delete failure; still remove locally
+    }
     setChats((prev) => prev.filter((c) => c.id !== chatId))
     if (activeChatId === chatId) onDeleteChat()
   }
