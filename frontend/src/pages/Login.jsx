@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { signInWithEmail, signUpWithEmail, signInWithGoogle, supabase } from '../lib/supabase'
+import { signInWithEmail, signUpWithEmail, signInWithGoogle, supabase, supabaseConfigurationError } from '../lib/supabase'
 import { JURISDICTIONS, isJurisdiction } from '../lib/jurisdiction'
 import { MAIN_APP_PATH } from '../lib/authFlow'
 
@@ -55,6 +55,11 @@ export default function Login() {
     const callbackError = searchParams.get('error')
     if (callbackError) setServerError(callbackError)
 
+    if (supabaseConfigurationError || !supabase) {
+      setServerError(supabaseConfigurationError)
+      return
+    }
+
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) console.error('Task AI session check failed:', error.message)
       if (session) navigate(MAIN_APP_PATH, { replace: true })
@@ -93,22 +98,34 @@ export default function Login() {
     const errs = validate('Register', register)
     if (Object.keys(errs).length) { setErrors(errs); return }
     setLoading(true)
-    const { data, error } = await signUpWithEmail(
-      register.email,
-      register.password,
-      register.firstName.trim(),
-      register.lastName.trim(),
-      normalisePhone(register.phone),
-      register.jurisdiction,
-    )
-    setLoading(false)
-    if (error) { setServerError(error.message); return }
-    if (data.session) {
-      navigate(MAIN_APP_PATH, { replace: true })
-      return
+    setServerError('')
+    try {
+      const { data, error } = await signUpWithEmail(
+        register.email,
+        register.password,
+        register.firstName.trim(),
+        register.lastName.trim(),
+        normalisePhone(register.phone),
+        register.jurisdiction,
+      )
+      if (error) { setServerError(error.message); return }
+      if (data.session) {
+        navigate(MAIN_APP_PATH, { replace: true })
+        return
+      }
+      setTab('Login')
+      setServerNotice('Check your email to confirm your account, then return here to sign in.')
+    } catch (error) {
+      setServerError(
+        supabaseConfigurationError ||
+        (error?.message === 'Failed to fetch'
+          ? 'Could not reach the registration service. Check your connection and try again.'
+          : error?.message) ||
+        'Account creation failed. Please try again.',
+      )
+    } finally {
+      setLoading(false)
     }
-    setTab('Login')
-    setServerNotice('Check your email to confirm your account, then return here to sign in.')
   }
 
   async function handleGoogle() {
