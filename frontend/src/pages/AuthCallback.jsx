@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { callbackErrorFromUrl, loginErrorUrl, MAIN_APP_PATH } from '../lib/authFlow'
+import { callbackErrorFromUrl, loginErrorUrl } from '../lib/authFlow'
 
 const FALLBACK_ERROR = 'Google sign-in could not be completed. Please try again.'
 
 export default function AuthCallback() {
   const navigate = useNavigate()
-  const [status, setStatus] = useState('Completing secure sign-in…')
+  const [status, setStatus] = useState('Signing you in...')
 
   useEffect(() => {
     let active = true
@@ -38,7 +38,7 @@ export default function AuthCallback() {
       }
       if (!session) return fail(FALLBACK_ERROR)
 
-      if (active) navigate(MAIN_APP_PATH, { replace: true })
+      if (active) navigate('/', { replace: true })
     }
 
     complete().catch(fail)

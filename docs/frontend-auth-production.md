@@ -36,31 +36,70 @@ Only `VITE_` variables are available to browser code. Never configure
 in Vercel frontend variables.
 
 After changing environment variables, create a new deployment because Vite
-embeds public configuration at build time.
+embeds public configuration at build time. In Vercel, open the latest
+production deployment, choose **Redeploy**, disable **Use existing Build
+Cache**, and confirm the redeploy.
+
+For project `qfgeaayofzjnvblbgywd`, the production value of
+`VITE_SUPABASE_URL` must be:
+
+```text
+https://qfgeaayofzjnvblbgywd.supabase.co
+```
+
+Copy the public anon key from **Supabase → Project Settings → API** into
+`VITE_SUPABASE_ANON_KEY`. Do not use the service-role key. Set `VITE_API_URL`
+to the public HTTPS origin of the Render backend; it is used only for Task AI
+API requests and is not involved in email registration or Supabase OAuth.
+
+## Registration troubleshooting
+
+The Register form calls `supabase.auth.signUp` directly from the browser. It
+does not call Render. In the browser developer console, a registration attempt
+should identify this public endpoint without printing the submitted account
+details or any credentials:
+
+```text
+https://qfgeaayofzjnvblbgywd.supabase.co/auth/v1/signup
+```
+
+If registration reports that it cannot reach the service, verify the two
+`VITE_SUPABASE_*` production variables and redeploy without the build cache.
+If Supabase returns a structured Auth error, address that message in
+**Authentication → Providers → Email** or the relevant Auth settings. Confirm
+that email signup is enabled and review Supabase Auth logs for the failed
+request. Do not rebuild Render for a direct Supabase registration failure.
 
 ## Supabase Auth URL configuration
 
 For the current production alias, configure:
 
 - Site URL: `https://task-ai-navy.vercel.app`
-- Redirect URL: `https://task-ai-navy.vercel.app/auth/callback`
-- Redirect URL: `https://task-ai-navy.vercel.app/reset-password`
+- Redirect URL: `https://task-ai-navy.vercel.app/**`
 
-For local development, add exact entries only when needed:
+For local development, configure:
 
-- `http://localhost:5173/auth/callback`
-- `http://localhost:5173/reset-password`
+- Redirect URL: `http://localhost:5173/**`
 
-Add an exact callback/reset pair for every intentionally supported custom or
-preview origin. Avoid a broad Vercel wildcard in production unless preview
-OAuth is explicitly required and its access risk has been reviewed.
+These entries cover the app's `/auth/callback` and `/reset-password` routes.
+Add a separate redirect pattern for every intentionally supported custom or
+preview origin; do not add unrelated origins.
 
 Under **Authentication → Providers → Google**:
 
 1. Enable Google.
 2. Enter the Google OAuth web client ID and client secret.
-3. Copy the Supabase callback URL shown on that provider page. It has the form
-   `https://<SUPABASE_PROJECT_REF>.supabase.co/auth/v1/callback`.
+3. Save the provider configuration.
+
+For production project `qfgeaayofzjnvblbgywd`, the Supabase callback URL is:
+
+```text
+https://qfgeaayofzjnvblbgywd.supabase.co/auth/v1/callback
+```
+
+The error `Unsupported provider: provider is not enabled` is resolved by these
+Supabase provider settings. It cannot be fixed by changing the frontend OAuth
+call.
 
 Do not use the Vercel `/auth/callback` URL as Google Cloud's redirect URI.
 Google returns to Supabase first; Supabase then returns to Task AI.
@@ -71,7 +110,7 @@ Use a **Web application** OAuth 2.0 client. Configure:
 
 - Authorized JavaScript origin: `https://task-ai-navy.vercel.app`
 - Authorized redirect URI:
-  `https://<SUPABASE_PROJECT_REF>.supabase.co/auth/v1/callback`
+  `https://qfgeaayofzjnvblbgywd.supabase.co/auth/v1/callback`
 
 The redirect URI must exactly match the callback displayed by Supabase. Ensure
 the OAuth consent screen is published for production, or add intended accounts
@@ -89,19 +128,28 @@ https://task-ai-navy.vercel.app
 
 Add custom domains explicitly. Do not use `*` with authenticated endpoints.
 
+No Render rebuild is required for the current Google-provider-not-enabled
+error. Rebuild Render only when backend code or backend environment variables
+change.
+
 ## Git merge and production deployment
 
-The historical `feature/task-ai-ux-safety-redesign` branch has already been
-merged and is behind `main`; merging it again will not deploy newer code. For
-the current auth fix, use a pull request from `fix/frontend-production-auth`
-into `main`, or equivalently run:
+The historical feature and earlier authentication branches are already merged
+and behind `main`; merging them again will not deploy newer code. For this
+hardening change, use a pull request from
+`fix/google-oauth-production-hardening` into `main`:
 
 ```bash
-git fetch origin
-git switch main
-git pull --ff-only origin main
-git merge --no-ff origin/fix/frontend-production-auth
-git push origin main
+git switch fix/google-oauth-production-hardening
+git add frontend/src/pages/AuthCallback.jsx \
+  frontend/src/lib/authDeployment.test.js \
+  docs/frontend-auth-production.md
+git commit -m "fix: harden production Google OAuth callback"
+git push -u origin fix/google-oauth-production-hardening
+gh pr create --base main --head fix/google-oauth-production-hardening \
+  --title "Harden production Google OAuth callback"
+gh pr checks --watch
+gh pr merge --merge
 ```
 
 Pushing the merge to `main` triggers the configured Vercel production build.
