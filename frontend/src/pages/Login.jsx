@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, supabase } from '../lib/supabase'
 import { JURISDICTIONS, isJurisdiction } from '../lib/jurisdiction'
+import { MAIN_APP_PATH } from '../lib/authFlow'
 
 const TABS = ['Login', 'Register']
 
@@ -38,15 +39,27 @@ function normalisePhone(phone) {
 
 export default function Login() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [tab, setTab] = useState('Login')
   const [login, setLogin] = useState(INITIAL_LOGIN)
   const [register, setRegister] = useState(INITIAL_REGISTER)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState('')
+  const [serverNotice, setServerNotice] = useState('')
   const [forgotSent, setForgotSent] = useState(false)
   const [showForgot, setShowForgot] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
+
+  useEffect(() => {
+    const callbackError = searchParams.get('error')
+    if (callbackError) setServerError(callbackError)
+
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) console.error('Task AI session check failed:', error.message)
+      if (session) navigate(MAIN_APP_PATH, { replace: true })
+    })
+  }, [navigate, searchParams])
 
   function setField(setter) {
     return (e) => {
@@ -54,6 +67,7 @@ export default function Login() {
       setter((prev) => ({ ...prev, [name]: value }))
       setErrors((prev) => ({ ...prev, [name]: undefined }))
       setServerError('')
+      setServerNotice('')
     }
   }
 
@@ -62,10 +76,16 @@ export default function Login() {
     const errs = validate('Login', login)
     if (Object.keys(errs).length) { setErrors(errs); return }
     setLoading(true)
-    const { error } = await signInWithEmail(login.email, login.password)
-    setLoading(false)
-    if (error) { setServerError(error.message); return }
-    navigate('/', { replace: true })
+    try {
+      const { error } = await signInWithEmail(login.email, login.password)
+      if (error) { setServerError(error.message); return }
+      navigate(MAIN_APP_PATH, { replace: true })
+    } catch (error) {
+      console.error('Task AI email sign-in failed:', error)
+      setServerError(error?.message || 'Sign-in failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleRegister(e) {
@@ -73,7 +93,7 @@ export default function Login() {
     const errs = validate('Register', register)
     if (Object.keys(errs).length) { setErrors(errs); return }
     setLoading(true)
-    const { error } = await signUpWithEmail(
+    const { data, error } = await signUpWithEmail(
       register.email,
       register.password,
       register.firstName.trim(),
@@ -83,24 +103,44 @@ export default function Login() {
     )
     setLoading(false)
     if (error) { setServerError(error.message); return }
-    navigate('/', { replace: true })
+    if (data.session) {
+      navigate(MAIN_APP_PATH, { replace: true })
+      return
+    }
+    setTab('Login')
+    setServerNotice('Check your email to confirm your account, then return here to sign in.')
   }
 
   async function handleGoogle() {
     setLoading(true)
-    await signInWithGoogle()
-    // Redirect handled by Supabase OAuth — page will reload
+    setServerError('')
+    try {
+      const { error } = await signInWithGoogle()
+      if (error) throw error
+      // A successful call navigates away to Google; the callback completes login.
+    } catch (error) {
+      console.error('Task AI Google OAuth initiation failed:', error)
+      setServerError(error?.message || 'Google sign-in could not start. Please try again.')
+      setLoading(false)
+    }
   }
 
   async function handleForgot(e) {
     e.preventDefault()
     if (!forgotEmail) return
     setLoading(true)
-    await supabase.auth.resetPasswordForEmail(forgotEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    })
-    setLoading(false)
-    setForgotSent(true)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      if (error) throw error
+      setForgotSent(true)
+    } catch (error) {
+      console.error('Task AI password reset request failed:', error)
+      setServerError(error?.message || 'Password reset could not be started. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const inputClass = (field) =>
@@ -138,6 +178,11 @@ export default function Login() {
           {serverError && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
               {serverError}
+            </div>
+          )}
+          {serverNotice && (
+            <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              {serverNotice}
             </div>
           )}
 

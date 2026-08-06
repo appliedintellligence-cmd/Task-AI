@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { signInWithGoogle, supabase } from '../lib/supabase'
 import { apiFetch } from '../lib/api'
 import RepairSteps from '../components/RepairSteps'
 import MaterialsList from '../components/MaterialsList'
@@ -41,7 +41,11 @@ export default function Results() {
 
   async function handleSave() {
     if (!user) {
-      await supabase.auth.signInWithOAuth({ provider: 'google' })
+      const { error } = await signInWithGoogle()
+      if (error) {
+        console.error('Task AI Google OAuth initiation failed:', error.message)
+        setSaveError(error.message)
+      }
       return
     }
     setSaving(true)
