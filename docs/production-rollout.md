@@ -60,6 +60,9 @@ recreated first. Additive nullable columns should remain during rollback.
 
 ## Supabase authentication redirects
 
+The complete frontend OAuth configuration is documented in
+`docs/frontend-auth-production.md`.
+
 Set the Supabase Site URL to the canonical production web origin. Add exact
 redirect allow-list entries for both the production and staging origins:
 
