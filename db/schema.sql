@@ -195,13 +195,17 @@ CREATE POLICY "Users manage own profile" ON profiles
   FOR ALL USING (auth.uid() = id);
 
 -- Auto-create profile on signup
-CREATE OR REPLACE FUNCTION handle_new_user()
+CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, first_name, last_name, phone, jurisdiction)
+  INSERT INTO public.profiles (id, first_name, last_name, phone, jurisdiction)
   VALUES (
     NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'first_name', split_part(NEW.email, '@', 1)),
+    COALESCE(
+      NULLIF(NEW.raw_user_meta_data->>'first_name', ''),
+      NULLIF(split_part(COALESCE(NEW.email, ''), '@', 1), ''),
+      'User'
+    ),
     COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
     NEW.raw_user_meta_data->>'phone',
     CASE
@@ -212,8 +216,8 @@ BEGIN
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

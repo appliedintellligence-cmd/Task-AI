@@ -16,6 +16,7 @@ Apply these files one at a time in this exact order:
 5. `db/migrations/20260718_enforce_private_record_ownership.sql`
 6. `db/migrations/20260721_add_private_repair_photos.sql`
 7. `db/migrations/20260722_fix_messages_halfvec_index.sql`
+8. `db/migrations/20260806_fix_registration_profile_trigger.sql`
 
 The compatibility expand migration precedes the ownership migration only for a
 clean database because the ownership migration revokes the legacy RPC
@@ -41,9 +42,13 @@ the post-deployment contract migration during staging bootstrap.
    bucket remains private and has no anon/authenticated direct-access policy.
 5. Apply `db/migrations/20260722_fix_messages_halfvec_index.sql` and verify that
    `match_messages_for_user` remains owner-scoped and accepts `vector(3072)`.
-6. Apply the same expand sequence in the controlled production change window.
-7. Deploy and verify the new backend, then the web application.
-8. Only after the previous backend no longer receives traffic, manually apply
+6. Apply `db/migrations/20260806_fix_registration_profile_trigger.sql`, then
+   create a disposable test account through Supabase Auth and verify that
+   exactly one matching `public.profiles` row is created. The migration does
+   not modify existing users or profiles.
+7. Apply the same expand sequence in the controlled production change window.
+8. Deploy and verify the new backend, then the web application.
+9. Only after the previous backend no longer receives traffic, manually apply
    `db/post_deployment/20260721_contract_remove_legacy_rpcs.sql`.
 
 The legacy compatibility functions deliberately return empty sets. This keeps
