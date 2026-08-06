@@ -8,6 +8,7 @@ PRIVATE_PHOTOS = ROOT / "db/migrations/20260721_add_private_repair_photos.sql"
 SCHEMA = ROOT / "db/schema.sql"
 HALFVEC_FIX = ROOT / "db/migrations/20260722_fix_messages_halfvec_index.sql"
 OWNERSHIP = ROOT / "db/migrations/20260718_enforce_private_record_ownership.sql"
+REGISTRATION_FIX = ROOT / "db/migrations/20260806_fix_registration_profile_trigger.sql"
 
 
 def sql(path: Path) -> str:
@@ -91,3 +92,31 @@ def test_corrective_migration_is_idempotent_and_preserves_vector_contract():
     assert "embedding::halfvec(3072)" in text
     assert "c.user_id = owner_id" in text
     assert "grant execute on function match_messages_for_user(uuid, vector, float, int)" in text
+
+
+def assert_safe_registration_trigger(text: str):
+    assert "function public.handle_new_user()" in text
+    assert "insert into public.profiles" in text
+    assert "security definer" in text
+    assert "set search_path = ''" in text
+    assert "coalesce(new.email, '')" in text
+    assert "'user'" in text
+    assert "execute function public.handle_new_user()" in text
+
+
+def test_empty_database_baseline_has_safe_registration_trigger():
+    assert_safe_registration_trigger(sql(SCHEMA))
+
+
+def test_registration_trigger_fix_is_idempotent_and_non_destructive():
+    text = sql(REGISTRATION_FIX)
+    assert text.count("begin;") == 1
+    assert text.count("commit;") == 1
+    assert "create table if not exists public.profiles" in text
+    assert "from pg_policies" in text
+    assert "from pg_policy\n" not in text
+    assert text.count("add column if not exists") == 5
+    assert "on conflict (id) do nothing" in text
+    assert "update public.profiles" not in text
+    assert "delete from" not in text
+    assert_safe_registration_trigger(text)

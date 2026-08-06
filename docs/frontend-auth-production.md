@@ -70,6 +70,14 @@ If Supabase returns a structured Auth error, address that message in
 that email signup is enabled and review Supabase Auth logs for the failed
 request. Do not rebuild Render for a direct Supabase registration failure.
 
+If the response is `Database error saving new user`, inspect the Auth and
+Postgres logs for the underlying SQLSTATE and apply
+`db/migrations/20260806_fix_registration_profile_trigger.sql`. That migration
+repairs the `auth.users` profile trigger without changing existing account or
+profile data. Apply it only to the intended Supabase project in a controlled
+database change window; a Vercel or Render rebuild cannot repair a database
+trigger.
+
 ## Supabase Auth URL configuration
 
 For the current production alias, configure:
