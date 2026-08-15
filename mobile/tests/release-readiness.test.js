@@ -60,4 +60,27 @@ test('Android uses Expo image picker without deprecated broad storage permission
   assert.match(config, /expo-image-picker/)
   assert.match(analyse, /launchCameraAsync/)
   assert.match(analyse, /launchImageLibraryAsync/)
+  assert.match(analyse, /requestCameraPermissionsAsync/)
+  assert.match(analyse, /requestMediaLibraryPermissionsAsync/)
+  assert.match(read('app/guided.tsx'), /requestCameraPermissionsAsync/)
+})
+
+test('App Store privacy, AI consent, and account deletion are accessible', () => {
+  const settings = read('app/(tabs)/settings.tsx')
+  const analyse = read('app/(tabs)/index.tsx')
+  const api = read('services/api.ts')
+  assert.match(settings, /Privacy Policy/)
+  assert.match(settings, /Terms of Use/)
+  assert.match(settings, /Delete account/)
+  assert.match(analyse, /AI photo processing/)
+  assert.match(analyse, /AI_CONSENT_STORAGE_KEY/)
+  assert.match(api, /method: 'DELETE'/)
+  assert.match(api, /'\/account'/)
+})
+
+test('production profile uses an iOS 26 capable SDK image', () => {
+  const eas = JSON.parse(read('eas.json'))
+  assert.equal(eas.build.production.ios.image, 'sdk-57')
+  assert.equal(eas.build.production.autoIncrement, true)
+  assert.equal(eas.cli.requireCommit, true)
 })

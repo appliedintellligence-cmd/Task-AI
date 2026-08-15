@@ -170,6 +170,10 @@ export async function deleteChat(chatId: string, token: string) {
   return request<{ ok: boolean }>(`/chats/${chatId}`, { method: 'DELETE' }, token);
 }
 
+export async function deleteAccount(token: string) {
+  return request<{ ok: boolean }>('/account', { method: 'DELETE' }, token);
+}
+
 export async function inpaintImage(
   prompt: string,
   token: string,

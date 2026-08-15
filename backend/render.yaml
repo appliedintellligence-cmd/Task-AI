@@ -3,7 +3,11 @@ services:
     name: taskai-backend
     runtime: python
     branch: main
-    autoDeployTrigger: off
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - backend/**
+        - db/**
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
     healthCheckPath: /health

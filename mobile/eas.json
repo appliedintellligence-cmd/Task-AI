@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 12.0.0"
+    "version": ">= 16.0.0",
+    "requireCommit": true
   },
   "build": {
     "development": {
@@ -18,8 +19,11 @@
     },
     "production": {
       "autoIncrement": true,
+      "environment": "production",
       "ios": {
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "image": "sdk-57",
+        "resourceClass": "medium"
       }
     }
   },
@@ -27,8 +31,7 @@
     "production": {
       "ios": {
         "appleId": "nithila.nagu@gmail.com",
-        "ascAppId": "",
-        "appleTeamId": ""
+        "language": "en-AU"
       }
     }
   }

@@ -5,9 +5,11 @@ import {
   ActivityIndicator, ScrollView, Alert, SafeAreaView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { analyseImage, saveJob, AnalyseResult } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import RepairCard from '@/components/RepairCard';
+import { AI_CONSENT_STORAGE_KEY } from '@/constants/legal';
 
 type State = 'idle' | 'picked' | 'analysing' | 'result' | 'error';
 const ANALYSIS_STAGES = ['Checking image quality', 'Identifying the affected area', 'Assessing hazards', 'Checking DIY eligibility', 'Preparing the result'];
@@ -50,6 +52,19 @@ export default function AnalyseScreen() {
   }, [jurisdiction]);
 
   async function pickImage(fromCamera: boolean) {
+    const permission = fromCamera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        fromCamera ? 'Camera access required' : 'Photo access required',
+        fromCamera
+          ? 'Allow camera access in iPhone Settings to photograph a repair.'
+          : 'Allow photo access in iPhone Settings to select a repair image.',
+      );
+      return;
+    }
+
     const picker = fromCamera
       ? ImagePicker.launchCameraAsync
       : ImagePicker.launchImageLibraryAsync;
@@ -82,6 +97,22 @@ export default function AnalyseScreen() {
         [{ text: 'Choose state', onPress: () => router.push('/(tabs)/settings') }],
       );
       return;
+    }
+    const hasAIConsent = await AsyncStorage.getItem(AI_CONSENT_STORAGE_KEY);
+    if (hasAIConsent !== 'accepted') {
+      const accepted = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          'AI photo processing',
+          'Your repair photo and related details will be securely sent to Task AI’s service providers, including third-party AI providers, to identify damage and create guidance. Photos are stored privately with your account. You can review details in Settings → Privacy.',
+          [
+            { text: 'Not now', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Continue', onPress: () => resolve(true) },
+          ],
+          { cancelable: false },
+        );
+      });
+      if (!accepted) return;
+      await AsyncStorage.setItem(AI_CONSENT_STORAGE_KEY, 'accepted');
     }
     submitting.current = true;
     setAnalysisStage(0);

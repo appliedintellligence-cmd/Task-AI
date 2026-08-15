@@ -12,6 +12,7 @@ import GuidedRepair from './pages/GuidedRepair'
 import Landing from './pages/Landing'
 import ResetPassword from './pages/ResetPassword'
 import AuthCallback from './pages/AuthCallback'
+import LegalPage from './pages/LegalPage'
 
 export default function App() {
   return (
@@ -21,6 +22,9 @@ export default function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<Landing />} />
+        <Route path="/privacy" element={<LegalPage type="privacy" />} />
+        <Route path="/terms" element={<LegalPage type="terms" />} />
+        <Route path="/support" element={<LegalPage type="support" />} />
         <Route element={<AuthGuard><ProductShell /></AuthGuard>}>
           <Route path="/app" element={<Home />} />
           <Route path="/diagnose" element={<ChatPage />} />

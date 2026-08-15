@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { JURISDICTIONS, JURISDICTION_LABELS, Jurisdiction } from '@/constants/jurisdiction';
 import { useAuth } from '@/context/AuthContext';
+import { deleteAccount } from '@/services/api';
+import { PRIVACY_URL, SUPPORT_URL, TERMS_URL } from '@/constants/legal';
 
 export default function SettingsScreen() {
-  const { jurisdiction, updateJurisdiction } = useAuth();
+  const { jurisdiction, token, updateJurisdiction, signOut } = useAuth();
   const [selected, setSelected] = useState<Jurisdiction | null>(jurisdiction);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function save() {
     if (!selected) {
@@ -24,9 +27,45 @@ export default function SettingsScreen() {
     }
   }
 
+  function confirmDeleteAccount() {
+    Alert.alert(
+      'Delete account permanently?',
+      'This deletes your account, saved repair photos, diagnoses, and chat history. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Final confirmation',
+              'Are you sure you want to permanently delete all Task AI data?',
+              [
+                { text: 'Keep account', style: 'cancel' },
+                { text: 'Delete permanently', style: 'destructive', onPress: () => void removeAccount() },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  }
+
+  async function removeAccount() {
+    if (!token) return;
+    setDeleting(true);
+    try {
+      await deleteAccount(token);
+      await signOut();
+    } catch (error: any) {
+      Alert.alert('Could not delete account', error.message);
+      setDeleting(false);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Settings</Text>
         <Text style={styles.label}>State or territory</Text>
         <Text style={styles.help}>
@@ -51,14 +90,25 @@ export default function SettingsScreen() {
           <Text style={styles.saveText}>{saving ? 'Saving…' : jurisdiction ? 'Change state or territory' : 'Save state or territory'}</Text>
         </TouchableOpacity>
         {jurisdiction && <Text style={styles.current}>Current selection: {jurisdiction}</Text>}
-      </View>
+        <View style={styles.divider} />
+        <Text style={styles.label}>Privacy and support</Text>
+        <Text style={styles.help}>Learn how repair photos and related details are processed by Task AI and third-party AI providers.</Text>
+        <TouchableOpacity style={styles.linkButton} onPress={() => Linking.openURL(PRIVACY_URL)}><Text style={styles.linkText}>Privacy Policy</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.linkButton} onPress={() => Linking.openURL(TERMS_URL)}><Text style={styles.linkText}>Terms of Use</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.linkButton} onPress={() => Linking.openURL(SUPPORT_URL)}><Text style={styles.linkText}>Support</Text></TouchableOpacity>
+        <View style={styles.divider} />
+        <Text style={styles.label}>Account</Text>
+        <TouchableOpacity style={[styles.deleteButton, deleting && styles.disabled]} disabled={deleting} onPress={confirmDeleteAccount}>
+          <Text style={styles.deleteText}>{deleting ? 'Deleting account…' : 'Delete account'}</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#0A0A0A' },
-  container: { flex: 1, padding: 24 },
+  container: { padding: 24, paddingBottom: 48 },
   title: { color: '#FFFFFF', fontSize: 28, fontWeight: '800', marginBottom: 32 },
   label: { color: '#FFFFFF', fontSize: 17, fontWeight: '700', marginBottom: 6 },
   help: { color: '#9CA3AF', fontSize: 14, lineHeight: 20, marginBottom: 18 },
@@ -72,4 +122,9 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
   saveText: { color: '#0A0A0A', fontWeight: '800' },
   current: { color: '#9CA3AF', textAlign: 'center', marginTop: 12 },
+  divider: { height: 1, backgroundColor: '#2A2A2A', marginVertical: 28 },
+  linkButton: { minHeight: 48, justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: '#2A2A2A' },
+  linkText: { color: '#F97316', fontSize: 16, fontWeight: '700' },
+  deleteButton: { minHeight: 50, borderWidth: 1, borderColor: '#EF4444', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+  deleteText: { color: '#EF4444', fontWeight: '800' },
 });
