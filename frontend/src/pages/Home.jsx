@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getProfileJurisdiction, signInWithGoogle, supabase } from '../lib/supabase'
+import { getProfileJurisdiction, signInWithGoogle, signOut, supabase } from '../lib/supabase'
 import { apiFetch } from '../lib/api'
 import PhotoUpload from '../components/PhotoUpload'
 import RepairPhoto from '../components/RepairPhoto'
@@ -43,7 +43,7 @@ export default function Home() {
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut()
+    await signOut()
     setRecentJobs([])
   }
 

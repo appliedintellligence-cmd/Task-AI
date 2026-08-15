@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { oauthRedirectUrl } from './authFlow'
+import { LAST_ACTIVITY_STORAGE_KEY } from './sessionTimeout'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -106,6 +107,7 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
+  localStorage.removeItem(LAST_ACTIVITY_STORAGE_KEY)
   return requireSupabase().auth.signOut()
 }
 
