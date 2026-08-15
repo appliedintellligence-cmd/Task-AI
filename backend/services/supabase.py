@@ -276,6 +276,36 @@ def delete_chat(user_id: str, chat_id: str) -> bool:
     return bool(response.data)
 
 
+def delete_account(user_id: str) -> None:
+    """Delete all user-owned content before removing the authentication record."""
+    bucket = _client.storage.from_(BUCKET)
+
+    def collect_paths(prefix: str) -> list[str]:
+        paths = []
+        for item in bucket.list(prefix) or []:
+            name = item.get("name")
+            if not name:
+                continue
+            path = f"{prefix}/{name}"
+            if item.get("id") or item.get("metadata"):
+                paths.append(path)
+            else:
+                paths.extend(collect_paths(path))
+        return paths
+
+    # Delete by owner prefix so abandoned uploads are removed as well as saved jobs.
+    photo_paths = collect_paths(user_id)
+    if photo_paths:
+        for start in range(0, len(photo_paths), 100):
+            bucket.remove(photo_paths[start:start + 100])
+
+    # Messages cascade from chats. Delete dependent records before auth.users.
+    _client.table("chats").delete().eq("user_id", user_id).execute()
+    _client.table("jobs").delete().eq("user_id", user_id).execute()
+    _client.table("profiles").delete().eq("id", user_id).execute()
+    _client.auth.admin.delete_user(user_id)
+
+
 async def verify_token(token: str) -> str | None:
     try:
         user = _client.auth.get_user(token)

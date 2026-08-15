@@ -4,32 +4,37 @@
   "version": "1.0.0",
   "scripts": {
     "test": "node --test tests/*.test.js",
+    "typecheck": "tsc --noEmit",
+    "doctor": "expo-doctor",
+    "validate:release": "npm test && npm run typecheck && expo install --check && expo-doctor && expo config --type public",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web"
   },
   "dependencies": {
-    "@expo/vector-icons": "~14.0.4",
-    "@react-native-async-storage/async-storage": "1.23.1",
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.47.0",
-    "expo": "~52.0.46",
-    "expo-font": "~13.0.3",
-    "expo-image-picker": "~16.0.6",
-    "expo-linking": "~7.0.4",
-    "expo-router": "~4.0.17",
-    "expo-secure-store": "~14.0.1",
-    "expo-splash-screen": "~0.29.22",
-    "expo-status-bar": "~2.0.1",
-    "react": "18.3.1",
-    "react-native": "0.76.9",
-    "react-native-safe-area-context": "4.12.0",
-    "react-native-screens": "~4.4.0",
+    "expo": "^57.0.13",
+    "expo-constants": "~57.0.11",
+    "expo-font": "~57.0.1",
+    "expo-image-picker": "~57.0.10",
+    "expo-linking": "~57.0.6",
+    "expo-router": "~57.0.13",
+    "expo-secure-store": "~57.0.1",
+    "expo-splash-screen": "~57.0.6",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.2",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
     "react-native-url-polyfill": "^2.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
-    "@types/react": "~18.3.12",
-    "typescript": "^5.3.3"
+    "@types/react": "^19.1.1",
+    "expo-doctor": "^1.20.2",
+    "typescript": "~6.0.3"
   }
 }

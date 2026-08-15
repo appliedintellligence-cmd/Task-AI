@@ -7,16 +7,10 @@
     "icon": "./assets/icon.png",
     "scheme": "taskai",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0A0A0A"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.taskai.app",
       "buildNumber": "1",
-      "appStoreUrl": "",
       "infoPlist": {
         "NSCameraUsageDescription": "task.ai needs camera access to photograph home repairs.",
         "NSPhotoLibraryUsageDescription": "task.ai needs photo library access to select repair photos.",
@@ -29,7 +23,9 @@
         "backgroundColor": "#0A0A0A"
       },
       "package": "com.taskai.app",
-      "permissions": ["CAMERA"]
+      "permissions": [
+        "CAMERA"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -41,7 +37,17 @@
           "cameraPermission": "task.ai needs camera access to photograph repairs.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0A0A0A"
+        }
+      ],
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true

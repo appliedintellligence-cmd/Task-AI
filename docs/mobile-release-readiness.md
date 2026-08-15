@@ -43,6 +43,25 @@ are required when configuring automated App Store submission.
 Set both only after confirming the App Store Connect record and Apple team.
 Do not guess or copy identifiers from another application.
 
+The submit profile intentionally omits unknown numeric identifiers so EAS can
+prompt for them during the first interactive submission. Add `ascAppId` after
+the App Store Connect record exists to enable non-interactive submission.
+
+## Privacy and account controls
+
+The app links to the public privacy policy, terms, and support pages from
+Settings. Before the first photo analysis it asks for explicit consent to send
+the photo and related details to Task AI's infrastructure and third-party AI
+providers. Users can permanently delete their account and associated saved
+content from Settings through the authenticated `DELETE /account` endpoint.
+
+Before submission, confirm the deployed policy pages match the App Store
+Connect privacy questionnaire and the actual production provider list:
+
+- `https://task-ai-navy.vercel.app/privacy`
+- `https://task-ai-navy.vercel.app/terms`
+- `https://task-ai-navy.vercel.app/support`
+
 ## Google Play submission
 
 Internal Android EAS builds do not require Google Play submission credentials.
@@ -62,3 +81,18 @@ Before running an internal EAS build:
    picker, diagnosis, private history photos, and repaired previews on device.
 5. Confirm the Render staging `/inpaint` endpoint rejects missing/invalid tokens
    and cross-user job/photo references.
+6. Delete a disposable account in-app and verify its profile, jobs, chats,
+   messages, and private storage objects are removed.
+7. Confirm the production build uses the EAS `sdk-57` image (Xcode 26.6/iOS 26 SDK).
+8. Confirm the backend release gate passes and Render has deployed the
+   authenticated account-deletion endpoint before submitting the app.
+
+## TestFlight submission gate
+
+1. Create the `com.taskai.app` App Store Connect record and complete agreements.
+2. Add `ascAppId` and `appleTeamId` to the production submit profile.
+3. Configure EAS production variables and Apple credentials.
+4. Run `npm run validate:release` from `mobile/`.
+5. Run `npx testflight` from `mobile/` and complete physical-device UAT.
+6. Complete App Privacy, age rating, export compliance, support URL, privacy
+   URL, screenshots, review notes, and a working review account in App Store Connect.
